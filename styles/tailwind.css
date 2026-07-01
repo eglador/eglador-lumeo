@@ -1,0 +1,30 @@
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(lumeo);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(lumeo);
+
+@source "../src";
+
+@theme {
+  --animate-fade-in: fade-in 150ms ease-out;
+  --animate-scale-in: scale-in 150ms ease-out;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}

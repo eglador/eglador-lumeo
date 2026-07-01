@@ -1,0 +1,86 @@
+{
+  "name": "eglador-lumeo",
+  "version": "0.1.0",
+  "description": "Drag & drop image upload, gallery, tagging and cropping toolkit for Next.js",
+  "author": {
+    "name": "Umut Yaldız",
+    "url": "https://github.com/umutyaldiz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umutyaldiz/eglador-lumeo.git"
+  },
+  "homepage": "https://github.com/umutyaldiz/eglador-lumeo#readme",
+  "bugs": {
+    "url": "https://github.com/umutyaldiz/eglador-lumeo/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "scripts": {
+    "build": "npm run build:js && npm run build:css",
+    "build:js": "tsup",
+    "build:css": "tailwindcss -i ./styles/tailwind.css -o ./dist/style.css --minify",
+    "dev": "storybook dev -p 6006",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "typecheck": "tsc --noEmit",
+    "verify:use-client": "node ./scripts/verify-use-client.mjs"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@storybook/addon-essentials": "^8.6.4",
+    "@storybook/react": "^8.6.4",
+    "@storybook/react-vite": "^8.6.4",
+    "@tailwindcss/cli": "^4.3.2",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "msw": "^2.6.6",
+    "msw-storybook-addon": "^2.0.4",
+    "postcss": "^8.4.49",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^8.6.4",
+    "tailwindcss": "^4.3.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  },
+  "keywords": [
+    "react",
+    "nextjs",
+    "image-upload",
+    "crop",
+    "gallery",
+    "tailwind"
+  ],
+  "license": "MIT",
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
+  },
+  "dependencies": {
+    "lucide-react": "^1.23.0"
+  }
+}
