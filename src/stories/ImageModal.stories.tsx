@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ImageModal } from "../components/ImageModal/ImageModal";
 import { ImageGallery } from "../components/Gallery/ImageGallery";
 import { LumeoProvider } from "../context/LumeoProvider";
 import { useLumeoImages } from "../hooks/useLumeoImages";
 import { DEFAULT_IMAGE_TYPES } from "../lib/imageTypes";
 import { handlers, slowHandlers } from "../mocks/handlers";
-import type { LumeoImage, LumeoViewMode } from "../types";
+import type { LumeoImage, LumeoViewMode, SizePresetOption } from "../types";
 
 const image: LumeoImage = {
   id: "1",
@@ -64,6 +64,37 @@ export const LargeImageSizeTab: Story = {
       description: {
         story:
           "Yüksek çözünürlüklü bir görsel için 'Boyutlandır & Kırp' butonuna basıp 'Boyut Seçenekleri' sekmesinde elle alan seçmeden hazır boyutlardan (1024x768, 1920x1080, 400x400 vb.) seçim yapabilirsiniz. Piksel bazında özel bir alan gerekiyorsa 'Özel Kırpma' sekmesine geçin.",
+      },
+    },
+  },
+};
+
+const nestedSizePresets: SizePresetOption[] = [
+  { id: "400x400", width: 400, height: 400 },
+  { id: "1920x1080", width: 1920, height: 1080 },
+  {
+    id: "detay",
+    label: "Detay",
+    sizes: [
+      { width: 400, height: 400 },
+      { width: 500, height: 200 },
+      { width: 200, height: 200 },
+    ],
+  },
+];
+
+export const NestedSizePreset: Story = {
+  name: "İç içe boyut grubu ('Detay' tek seçim, 3 çıktı üretir)",
+  render: () => (
+    <LumeoProvider config={{ ...config, sizePresets: nestedSizePresets }}>
+      <ImageModal image={image} onClose={() => {}} onRefetch={() => {}} />
+    </LumeoProvider>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "'Detay' tek bir seçilebilir kutu olarak görünür, ama altında 400×400, 500×200 ve 200×200 boyutları listelenir. Seçip kaydettiğinizde bu üç boyutun hepsi tek bir grup halinde API'ye gönderilir (`sizes: [{ id: 'detay', label: 'Detay', sizes: [...] }]`) — sunucu her birini ayrı ayrı kırpar.",
       },
     },
   },

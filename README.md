@@ -67,8 +67,8 @@ skipped entirely:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Hero Image", aspect: 21 / 9 },
-    { value: "avatar", label: "Avatar", aspect: 1 },
+    { value: "hero", label: "Hero Image", aspect: 21 / 9, width: 2560, height: 1097 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -77,8 +77,37 @@ const config: LumeoConfig = {
 };
 ```
 
+`imageTypes[].width`/`height` are optional and independent of `aspect` — when set, they're shown
+next to the type's label in the usage-type selector (e.g. `21:9 · 2560×1097`) purely as a hint for
+the editor; they don't change how the crop tool behaves (that's still driven by `aspect` alone).
+
 If omitted, `imageTypes` and `sizePresets` fall back to a locale-aware built-in default set
 (English by default, Turkish when `locale: "tr"`).
+
+#### Grouped ("nested") size presets
+
+A single `sizePresets` entry can expand to **multiple** output boxes while still appearing as one
+selectable item in the "Size Options" tab — useful for a named bundle like "Detail" that should
+always produce the same three crops together:
+
+```tsx
+sizePresets: [
+  { id: "square", width: 512, height: 512 },
+  {
+    id: "detail",
+    label: "Detail",
+    sizes: [
+      { width: 400, height: 400 },
+      { width: 500, height: 200 },
+      { width: 200, height: 200 },
+    ],
+  },
+],
+```
+
+Selecting "Detail" toggles as a single checkbox (it counts as one selection in the tab badge), but
+saving expands it into every box listed under `sizes` — see **(b)** under `endpoints.save` below
+for the exact payload shape this produces.
 
 ### Localization (`locale`)
 
@@ -234,15 +263,27 @@ tab**.
 ```
 
 **b) One or more preset sizes were picked from the "Size Options" tab** (no manual area selection,
-just target dimensions):
+just target dimensions). Each selected preset is normalized to the same shape — an `id`, a
+`label`, and a `sizes` array of the concrete output boxes it expands to. A plain preset always
+expands to exactly one box; a grouped/"nested" preset (see above) expands to several, all under
+the single `id`/`label` the user actually selected:
 
 ```json
 {
   "id": "img_9f1c2a",
   "type": "manset",
   "sizes": [
-    { "width": 1024, "height": 768, "label": "1024x768" },
-    { "width": 400, "height": 400, "label": "400x400" }
+    { "id": "1024x768", "label": "1024x768", "sizes": [{ "width": 1024, "height": 768, "label": "1024x768" }] },
+    { "id": "400x400", "label": "400x400", "sizes": [{ "width": 400, "height": 400, "label": "400x400" }] },
+    {
+      "id": "detail",
+      "label": "Detail",
+      "sizes": [
+        { "width": 400, "height": 400, "label": "400×400" },
+        { "width": 500, "height": 200, "label": "500×200" },
+        { "width": 200, "height": 200, "label": "200×200" }
+      ]
+    }
   ]
 }
 ```
@@ -280,16 +321,20 @@ the original image's natural pixel space, `x`/`y` from the top-left corner:
 { "success": true }
 ```
 
-**What your backend should do with `sizes` / `crops`:** each entry is a request for a **new
-derived output**, not a mutation of the original image. For every entry, generate the
-resized/cropped file (using `width`/`height`, or the `crops[].x/y/width/height` region cut from
-the original) and persist it as its **own** `LumeoImage` record — its own `id`, its own `url`. The
-original image record is left untouched (only `type` is updated on it, if sent). The package
-itself does nothing more than send this payload and refetch `list` right after — it never reads
-or interprets `sizes`/`crops` beyond that, so this behavior is entirely up to your backend.
+**What your backend should do with `sizes` / `crops`:** each box is a request for a **new derived
+output**, not a mutation of the original image. For every entry in `crops`, and for every box
+inside every `sizes[].sizes`, generate the resized/cropped file (using that box's `width`/`height`,
+or the `crops[].x/y/width/height` region cut from the original) and persist it as its **own**
+`LumeoImage` record — its own `id`, its own `url`. Iterate `sizes[].sizes`, not `sizes` itself: a
+plain preset's array has one box, but a grouped preset like "Detail" has several, and all of them
+need to be produced even though the user only ticked one checkbox. The original image record is
+left untouched (only `type` is updated on it, if sent). The package itself does nothing more than
+send this payload and refetch `list` right after — it never reads or interprets `sizes`/`crops`
+beyond that, so this behavior is entirely up to your backend.
 
-Concretely, after payload **(b)** above (two size presets picked), the very next `GET list` call
-is expected to include two brand new entries alongside the untouched original:
+Concretely, after payload **(b)** above (two plain presets plus the "Detail" group picked), the
+very next `GET list` call is expected to include five brand new entries — two for the plain
+presets, three for "Detail" — alongside the untouched original:
 
 ```json
 {
@@ -318,13 +363,38 @@ is expected to include two brand new entries alongside the untouched original:
       "uploadedAt": "2026-07-01T20:16:02.000Z",
       "width": 400,
       "height": 400
+    },
+    {
+      "id": "img_9f1c2a_detail_400x400",
+      "fileName": "headline-image (400×400).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detail_400x400.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 400,
+      "height": 400
+    },
+    {
+      "id": "img_9f1c2a_detail_500x200",
+      "fileName": "headline-image (500×200).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detail_500x200.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 500,
+      "height": 200
+    },
+    {
+      "id": "img_9f1c2a_detail_200x200",
+      "fileName": "headline-image (200×200).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detail_200x200.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 200,
+      "height": 200
     }
   ]
 }
 ```
 
-`src/mocks/handlers.ts` implements exactly this behavior and backs the
-`ImageModal / SaveUpdatesTheList` Storybook story — open it to see the full round trip live.
+`src/mocks/handlers.ts` implements exactly this behavior (including expanding grouped presets like
+"Detail" into one output per nested box) and backs the `ImageModal / SaveUpdatesTheList` and
+`ImageModal / NestedSizePreset` Storybook stories — open them to see the full round trip live.
 
 ---
 
@@ -470,8 +540,8 @@ hazır varsayılanlar tamamen devre dışı kalır:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Ana Görsel", aspect: 21 / 9 },
-    { value: "avatar", label: "Avatar", aspect: 1 },
+    { value: "hero", label: "Ana Görsel", aspect: 21 / 9, width: 2560, height: 1097 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -480,8 +550,37 @@ const config: LumeoConfig = {
 };
 ```
 
+`imageTypes[].width`/`height` opsiyoneldir ve `aspect`'ten bağımsız çalışır — verildiğinde,
+kullanım tipi seçicisinde etiketin yanında (ör. `21:9 · 2560×1097`) editöre yardımcı bir bilgi
+olarak gösterilir; kırpma aracının davranışını değiştirmez (o hâlâ sadece `aspect`'e bağlıdır).
+
 `imageTypes` ve `sizePresets` verilmezse, dile göre (locale) değişen hazır bir varsayılan sete
 düşer (varsayılan olarak İngilizce, `locale: "tr"` verildiğinde Türkçe).
+
+#### Gruplanmış ("iç içe") boyut seçenekleri
+
+Tek bir `sizePresets` girdisi, "Boyut Seçenekleri" sekmesinde tek bir seçilebilir öğe olarak
+görünürken **birden fazla** çıktı boyutuna genişleyebilir — "Detay" gibi isimlendirilmiş bir
+grubun her zaman aynı üç kırpmayı birlikte üretmesi gerektiğinde kullanışlıdır:
+
+```tsx
+sizePresets: [
+  { id: "square", width: 512, height: 512 },
+  {
+    id: "detay",
+    label: "Detay",
+    sizes: [
+      { width: 400, height: 400 },
+      { width: 500, height: 200 },
+      { width: 200, height: 200 },
+    ],
+  },
+],
+```
+
+"Detay"ı seçmek tek bir checkbox gibi çalışır (sekme rozetinde tek seçim olarak sayılır), ama
+kaydedince `sizes` altında listelenen her boyuta genişler — bunun tam olarak hangi payload'ı
+ürettiğini görmek için aşağıda `endpoints.save` altındaki **(b)** maddesine bakın.
 
 ### Dil desteği (`locale`)
 
@@ -637,15 +736,27 @@ kullanıcı o sekmede seçim yaptıysa gönderilir**.
 ```
 
 **b) "Boyut Seçenekleri" sekmesinden hazır boyut(lar) seçildiyse** (kullanıcı elle alan seçmez,
-sadece hedef ölçüleri işaretler):
+sadece hedef ölçüleri işaretler). Seçilen her preset aynı şekle normalize edilir — bir `id`, bir
+`label`, ve genişlediği somut çıktı kutularının listesi olan bir `sizes` dizisi. Düz bir preset her
+zaman tam olarak bir kutuya genişler; gruplanmış/"iç içe" bir preset (yukarıya bakın) ise
+kullanıcının seçtiği tek `id`/`label` altında birden fazla kutuya genişler:
 
 ```json
 {
   "id": "img_9f1c2a",
   "type": "manset",
   "sizes": [
-    { "width": 1024, "height": 768, "label": "1024x768" },
-    { "width": 400, "height": 400, "label": "400x400" }
+    { "id": "1024x768", "label": "1024x768", "sizes": [{ "width": 1024, "height": 768, "label": "1024x768" }] },
+    { "id": "400x400", "label": "400x400", "sizes": [{ "width": 400, "height": 400, "label": "400x400" }] },
+    {
+      "id": "detay",
+      "label": "Detay",
+      "sizes": [
+        { "width": 400, "height": 400, "label": "400×400" },
+        { "width": 500, "height": 200, "label": "500×200" },
+        { "width": 200, "height": 200, "label": "200×200" }
+      ]
+    }
   ]
 }
 ```
@@ -684,17 +795,21 @@ birleşimi).
 { "success": true }
 ```
 
-**Backend'iniz `sizes` / `crops` ile ne yapmalı:** buradaki her bir eleman, orijinal görselin
-değiştirilmesi değil, **yeni bir türetilmiş çıktı** talebidir. Her eleman için ilgili
-boyutlandırılmış/kırpılmış dosyayı üretin (`width`/`height`'ı, ya da `crops[].x/y/width/height`
-bölgesini orijinalden kırparak) ve bunu **kendi** `LumeoImage` kaydı olarak saklayın — kendi `id`'si,
-kendi `url`'i ile. Orijinal görsel kaydı dokunulmadan kalır (gönderildiyse sadece `type` alanı
-güncellenir). Paketin kendisi bu payload'ı gönderip hemen ardından `list`'i yeniden çekmekten
-fazlasını yapmaz — `sizes`/`crops` içeriğini bunun ötesinde hiç yorumlamaz, dolayısıyla bu davranış
-tamamen backend'inize kalmıştır.
+**Backend'iniz `sizes` / `crops` ile ne yapmalı:** buradaki her kutu, orijinal görselin
+değiştirilmesi değil, **yeni bir türetilmiş çıktı** talebidir. `crops` içindeki her eleman için, ve
+her `sizes[].sizes` içindeki her kutu için ilgili boyutlandırılmış/kırpılmış dosyayı üretin (o
+kutunun `width`/`height`'ını, ya da `crops[].x/y/width/height` bölgesini orijinalden kırparak) ve
+bunu **kendi** `LumeoImage` kaydı olarak saklayın — kendi `id`'si, kendi `url`'i ile. `sizes`'ın
+kendisini değil `sizes[].sizes`'ı gezin: düz bir preset'in dizisinde tek kutu vardır, ama "Detay"
+gibi gruplanmış bir preset'te birden fazla kutu vardır ve kullanıcı tek bir checkbox işaretlemiş
+olsa da hepsinin üretilmesi gerekir. Orijinal görsel kaydı dokunulmadan kalır (gönderildiyse sadece
+`type` alanı güncellenir). Paketin kendisi bu payload'ı gönderip hemen ardından `list`'i yeniden
+çekmekten fazlasını yapmaz — `sizes`/`crops` içeriğini bunun ötesinde hiç yorumlamaz, dolayısıyla bu
+davranış tamamen backend'inize kalmıştır.
 
-Somut olarak, yukarıdaki **(b)** payload'ından sonra (iki hazır boyut seçildi), bir sonraki
-`GET list` çağrısının, dokunulmamış orijinalin yanında iki yepyeni kayıt içermesi beklenir:
+Somut olarak, yukarıdaki **(b)** payload'ından sonra (iki düz preset artı "Detay" grubu seçildi),
+bir sonraki `GET list` çağrısının, dokunulmamış orijinalin yanında beş yepyeni kayıt içermesi
+beklenir — iki tanesi düz preset'ler için, üç tanesi "Detay" için:
 
 ```json
 {
@@ -723,13 +838,39 @@ Somut olarak, yukarıdaki **(b)** payload'ından sonra (iki hazır boyut seçild
       "uploadedAt": "2026-07-01T20:16:02.000Z",
       "width": 400,
       "height": 400
+    },
+    {
+      "id": "img_9f1c2a_detay_400x400",
+      "fileName": "manset-gorseli (400×400).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detay_400x400.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 400,
+      "height": 400
+    },
+    {
+      "id": "img_9f1c2a_detay_500x200",
+      "fileName": "manset-gorseli (500×200).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detay_500x200.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 500,
+      "height": 200
+    },
+    {
+      "id": "img_9f1c2a_detay_200x200",
+      "fileName": "manset-gorseli (200×200).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_detay_200x200.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 200,
+      "height": 200
     }
   ]
 }
 ```
 
-`src/mocks/handlers.ts` tam olarak bu davranışı uygular ve `ImageModal / SaveUpdatesTheList`
-Storybook örneğinin arkasındaki mock sunucudur — uçtan uca akışı canlı görmek için açabilirsiniz.
+`src/mocks/handlers.ts` tam olarak bu davranışı uygular (gruplanmış "Detay" gibi preset'leri her
+iç boyut için ayrı bir çıktıya genişletmek dahil) ve `ImageModal / SaveUpdatesTheList` ile
+`ImageModal / NestedSizePreset` Storybook örneklerinin arkasındaki mock sunucudur — uçtan uca
+akışı canlı görmek için açabilirsiniz.
 
 ---
 

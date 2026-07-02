@@ -98,18 +98,20 @@ function buildHandlers(writeDelayMs: number) {
             type: undefined,
           });
         });
-        body.sizes?.forEach((size, index) => {
-          const width = Math.round(size.width);
-          const height = Math.round(size.height);
-          derived.push({
-            ...source,
-            id: `img-${Date.now()}-size-${index}`,
-            fileName: `${source.fileName} (${size.label})`,
-            url: `https://picsum.photos/seed/${source.id}-size-${index}/${width}/${height}`,
-            uploadedAt: new Date().toISOString(),
-            width,
-            height,
-            type: undefined,
+        body.sizes?.forEach((selected, selectedIndex) => {
+          selected.sizes.forEach((box, boxIndex) => {
+            const width = Math.round(box.width);
+            const height = Math.round(box.height);
+            derived.push({
+              ...source,
+              id: `img-${Date.now()}-size-${selectedIndex}-${boxIndex}`,
+              fileName: `${source.fileName} (${box.label})`,
+              url: `https://picsum.photos/seed/${source.id}-size-${selectedIndex}-${boxIndex}/${width}/${height}`,
+              uploadedAt: new Date().toISOString(),
+              width,
+              height,
+              type: undefined,
+            });
           });
         });
       }

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { CropOverlay } from "./CropOverlay";
 import { AspectRatioPicker, type AspectPreset } from "./AspectRatioPicker";
 import { CropRegionChips } from "./CropRegionChips";
-import { REGION_COLORS } from "./colors";
-import { centeredRectForAspect } from "../../../lib/geometry";
+import { pickRegionColor } from "./colors";
+import { centeredRectForAspect, centeredRectForSize } from "../../../lib/geometry";
 import type { Bounds } from "../../../lib/geometry";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
 import type { LumeoImage } from "../../../types";
@@ -37,12 +37,16 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropS
 
   const addRegion = (preset: AspectPreset) => {
     const naturalBounds = naturalSize.width > 0 ? naturalSize : { width: 1000, height: 1000 };
-    const rect = centeredRectForAspect(naturalBounds, preset.aspect);
+    const rect =
+      preset.width && preset.height
+        ? centeredRectForSize(naturalBounds, preset.width, preset.height)
+        : centeredRectForAspect(naturalBounds, preset.aspect);
     regionsApi.addRegion({
       id: crypto.randomUUID(),
       name: messages.cropRegionName(regionsApi.regions.length + 1),
       aspectLabel: preset.label,
       aspect: preset.aspect,
+      color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
       ...rect,
     });
   };
@@ -69,6 +73,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropS
                 name: messages.cropRegionName(1),
                 aspectLabel: defaultAspect ? messages.recommendedRatio : messages.free,
                 aspect: defaultAspect,
+                color: pickRegionColor([]),
                 ...rect,
               });
             }
@@ -76,19 +81,21 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropS
           className="lumeo:box-border lumeo:block lumeo:max-h-[380px] lumeo:max-w-full lumeo:select-none lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain"
         />
         {naturalSize.width > 0 &&
-          regionsApi.regions.map((region, index) => (
-            <CropOverlay
-              key={region.id}
-              region={region}
-              aspect={region.aspect}
-              isActive={region.id === regionsApi.activeRegionId}
-              color={REGION_COLORS[index % REGION_COLORS.length]}
-              displayBounds={displayBounds}
-              naturalSize={naturalSize}
-              onActivate={() => regionsApi.setActiveRegionId(region.id)}
-              onChange={(rect) => regionsApi.updateRegion(region.id, rect)}
-            />
-          ))}
+          // Draw the active region last so it's always on top of overlapping inactive ones.
+          [...regionsApi.regions]
+            .sort((a) => (a.id === regionsApi.activeRegionId ? 1 : -1))
+            .map((region) => (
+              <CropOverlay
+                key={region.id}
+                region={region}
+                aspect={region.aspect}
+                isActive={region.id === regionsApi.activeRegionId}
+                color={region.color}
+                displayBounds={displayBounds}
+                naturalSize={naturalSize}
+                onChange={(rect) => regionsApi.updateRegion(region.id, rect)}
+              />
+            ))}
       </div>
 
       <div className="lumeo:grid lumeo:grid-cols-1 lumeo:gap-3 lumeo:sm:grid-cols-2">

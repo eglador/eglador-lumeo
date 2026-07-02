@@ -1,4 +1,4 @@
-import type { SizePresetOption, LumeoLocale } from "../types";
+import type { SizePresetOption, SizePresetSize, SelectedSize, LumeoLocale } from "../types";
 import { resolveLocale } from "./i18n";
 
 export const DEFAULT_SIZE_PRESETS_EN: SizePresetOption[] = [
@@ -29,5 +29,26 @@ export function resolveSizePresets(
 }
 
 export function formatSizeLabel(preset: SizePresetOption): string {
-  return preset.label ?? `${preset.width}×${preset.height}`;
+  if (preset.label) return preset.label;
+  if (preset.sizes && preset.sizes.length > 0) {
+    return preset.sizes.map((size) => size.label ?? `${size.width}×${size.height}`).join(", ");
+  }
+  return `${preset.width}×${preset.height}`;
+}
+
+/** Expands a preset to its full list of concrete output boxes — one entry for a plain preset, several for a nested group. */
+export function expandPresetSizes(preset: SizePresetOption): SizePresetSize[] {
+  if (preset.sizes && preset.sizes.length > 0) {
+    return preset.sizes.map((size) => ({
+      width: size.width,
+      height: size.height,
+      label: size.label ?? `${size.width}×${size.height}`,
+    }));
+  }
+  return [{ width: preset.width!, height: preset.height!, label: formatSizeLabel(preset) }];
+}
+
+/** Normalizes a selected preset into the shape sent to the API — same contract whether the preset is plain or nested. */
+export function toSelectedSize(preset: SizePresetOption): SelectedSize {
+  return { id: preset.id, label: formatSizeLabel(preset), sizes: expandPresetSizes(preset) };
 }

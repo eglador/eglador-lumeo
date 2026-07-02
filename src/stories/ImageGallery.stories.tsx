@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { ImageGallery } from "../components/Gallery/ImageGallery";
 import { DEFAULT_IMAGE_TYPES } from "../lib/imageTypes";

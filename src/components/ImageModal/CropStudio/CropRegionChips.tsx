@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
-import { REGION_COLORS } from "./colors";
 import type { LumeoMessages } from "../../../lib/i18n";
 
 export interface CropRegionChipsProps {
@@ -18,7 +17,7 @@ export function CropRegionChips({ regionsApi, messages }: CropRegionChipsProps) 
 
   return (
     <ul className="lumeo:list-none lumeo:flex lumeo:flex-col lumeo:gap-1.5 lumeo:p-0">
-      {regionsApi.regions.map((region, index) => (
+      {regionsApi.regions.map((region) => (
         <li
           key={region.id}
           className={`lumeo:flex lumeo:items-center lumeo:gap-2 lumeo:rounded-sm lumeo:border lumeo:px-2.5 lumeo:py-1.5 lumeo:transition-colors ${
@@ -27,7 +26,7 @@ export function CropRegionChips({ regionsApi, messages }: CropRegionChipsProps) 
         >
           <span
             className="lumeo:h-2.5 lumeo:w-2.5 lumeo:shrink-0 lumeo:rounded-full"
-            style={{ backgroundColor: REGION_COLORS[index % REGION_COLORS.length] }}
+            style={{ backgroundColor: region.color }}
           />
           {editingId === region.id ? (
             <input

@@ -19,7 +19,6 @@ export interface CropOverlayProps {
   displayBounds: Bounds;
   /** naturalWidth/naturalHeight of the underlying image. */
   naturalSize: Bounds;
-  onActivate: () => void;
   /** Called once, on pointerup, with the committed rect in natural pixel space. */
   onChange: (rect: Rect) => void;
 }
@@ -50,7 +49,6 @@ export function CropOverlay({
   color,
   displayBounds,
   naturalSize,
-  onActivate,
   onChange,
 }: CropOverlayProps) {
   const boxRef = useRef<HTMLDivElement>(null);
@@ -70,7 +68,7 @@ export function CropOverlay({
   const displayRect = scaleRect(region, naturalToDisplayScale);
 
   const formatReadout = (rect: Rect) =>
-    `${Math.round(rect.x)}, ${Math.round(rect.y)} · ${Math.round(rect.width)}×${Math.round(rect.height)}`;
+    `x: ${Math.round(rect.x)}, y: ${Math.round(rect.y)} · w: ${Math.round(rect.width)}px, h: ${Math.round(rect.height)}px`;
 
   const applyDisplayRect = (rect: Rect) => {
     const box = boxRef.current;
@@ -109,7 +107,6 @@ export function CropOverlay({
   const startDrag = useCallback(
     (kind: "move" | HandleId) => (event: React.PointerEvent) => {
       event.stopPropagation();
-      onActivate();
       (event.target as Element).setPointerCapture(event.pointerId);
       dragRef.current = {
         kind,
@@ -117,7 +114,7 @@ export function CropOverlay({
         startDisplayRect: scaleRect(region, naturalToDisplayScale),
       };
     },
-    [region, naturalToDisplayScale, onActivate]
+    [region, naturalToDisplayScale]
   );
 
   const handlePointerMove = useCallback(
@@ -149,10 +146,11 @@ export function CropOverlay({
   const handles = aspect ? CORNER_HANDLES : [...CORNER_HANDLES, ...EDGE_HANDLES];
 
   if (!isActive) {
+    // Purely decorative: select regions from the list, not by clicking on the
+    // image, so overlapping regions can't steal a drag meant for the active one.
     return (
       <div
-        onPointerDown={onActivate}
-        className="lumeo:absolute lumeo:box-border lumeo:cursor-pointer lumeo:border-2 lumeo:border-dashed lumeo:opacity-60"
+        className="lumeo:pointer-events-none lumeo:absolute lumeo:box-border lumeo:border-2 lumeo:border-dashed lumeo:opacity-60"
         style={{
           left: displayRect.x,
           top: displayRect.y,

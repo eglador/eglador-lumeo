@@ -8,6 +8,10 @@ export interface LumeoImageTypeOption {
   label: string;
   /** Preferred crop ratio (width / height) for this usage type. Omit to allow free-form cropping. */
   aspect?: number;
+  /** Preferred output width in pixels for this usage type. Shown next to the label; independent of `aspect`. */
+  width?: number;
+  /** Preferred output height in pixels for this usage type. Shown next to the label; independent of `aspect`. */
+  height?: number;
 }
 
 export interface LumeoImage {
@@ -33,6 +37,8 @@ export interface CropRegion {
   aspectLabel: string;
   /** Locked width/height ratio used while resizing. Undefined = free-form. */
   aspect?: number;
+  /** Hex color used to draw this region's outline and its list dot. Assigned once at creation. */
+  color: string;
   /** All coordinates are in the original image's natural pixel space. */
   x: number;
   y: number;
@@ -40,21 +46,40 @@ export interface CropRegion {
   height: number;
 }
 
+/** A single concrete output box, either a plain preset's size or one entry nested under a group. */
+export interface SizePresetSize {
+  width: number;
+  height: number;
+  /** Human readable label. Defaults to "{width}×{height}". */
+  label?: string;
+}
+
 /** A fixed output size the user can pick without manually dragging a crop area. */
 export interface SizePresetOption {
   /** Stable key, e.g. "1024x768". */
   id: string;
-  width: number;
-  height: number;
-  /** Human readable label shown in the UI. Defaults to "{width}×{height}". */
+  /** Human readable label shown in the UI. Required when using `sizes`; defaults to "{width}×{height}" otherwise. */
   label?: string;
+  /** Single-size preset. Omit both and use `sizes` instead for a group that expands to multiple output boxes. */
+  width?: number;
+  height?: number;
+  /**
+   * Nested output sizes for a single selectable preset — e.g. a "Detay" entry that expands to
+   * 400×400, 500×200, and 200×200 crops. Selecting this preset selects the whole group at once;
+   * saving produces every box listed here. When set, top-level `width`/`height` are ignored.
+   */
+  sizes?: SizePresetSize[];
 }
 
-/** A size the user selected from the preset list (no manual crop coordinates involved). */
+/**
+ * A size preset the user selected from the preset list, normalized to its full list of output
+ * boxes — always at least one entry, even for a plain (non-nested) preset. No manual crop
+ * coordinates are involved; the API crops to each box in `sizes` directly.
+ */
 export interface SelectedSize {
-  width: number;
-  height: number;
+  id: string;
   label: string;
+  sizes: SizePresetSize[];
 }
 
 export interface LumeoEndpoints {

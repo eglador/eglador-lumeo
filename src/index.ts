@@ -7,6 +7,7 @@ export type {
   LumeoLocale,
   CropRegion,
   SizePresetOption,
+  SizePresetSize,
   SelectedSize,
   RejectReason,
   RejectedFile,
@@ -20,6 +21,7 @@ export {
   DEFAULT_IMAGE_TYPES_TR,
   resolveImageTypes,
   findImageTypeLabel,
+  formatImageTypeMeta,
 } from "./lib/imageTypes";
 export {
   DEFAULT_SIZE_PRESETS,
@@ -27,6 +29,8 @@ export {
   DEFAULT_SIZE_PRESETS_TR,
   resolveSizePresets,
   formatSizeLabel,
+  expandPresetSizes,
+  toSelectedSize,
 } from "./lib/sizePresets";
 export { getMessages, resolveLocale, dateLocaleTag } from "./lib/i18n";
 export type { LumeoMessages } from "./lib/i18n";

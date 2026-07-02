@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LumeoUploader } from "../components/LumeoUploader/LumeoUploader";
 import { LumeoProvider } from "../context/LumeoProvider";
 import { handlers, slowHandlers } from "../mocks/handlers";

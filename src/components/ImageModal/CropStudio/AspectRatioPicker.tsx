@@ -5,6 +5,9 @@ import type { LumeoMessages } from "../../../lib/i18n";
 export interface AspectPreset {
   label: string;
   aspect?: number;
+  /** Exact pixel size for custom width/height entries, so the crop box is sized to match instead of just its ratio. */
+  width?: number;
+  height?: number;
 }
 
 function buildAspectPresets(messages: LumeoMessages): AspectPreset[] {
@@ -68,7 +71,7 @@ export function AspectRatioPicker({ onAdd, messages }: AspectRatioPickerProps) {
             const w = Number(customW);
             const h = Number(customH);
             if (w > 0 && h > 0) {
-              onAdd({ label: `${w}:${h}`, aspect: w / h });
+              onAdd({ label: `${w}:${h}`, aspect: w / h, width: w, height: h });
               setCustomW("");
               setCustomH("");
             }

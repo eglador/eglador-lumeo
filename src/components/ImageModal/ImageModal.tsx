@@ -4,7 +4,7 @@ import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useCropRegions } from "../../hooks/useCropRegions";
 import { useSizeSelections } from "../../hooks/useSizeSelections";
 import { resolveImageTypes } from "../../lib/imageTypes";
-import { resolveSizePresets } from "../../lib/sizePresets";
+import { resolveSizePresets, toSelectedSize } from "../../lib/sizePresets";
 import { saveImageMeta, deleteImage } from "../../lib/api";
 import { refreshOnce } from "../../lib/refreshOnce";
 import { getMessages, dateLocaleTag } from "../../lib/i18n";
@@ -51,7 +51,7 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
       id: image.id,
       type: selectedType,
       ...(cropEnabled && selectedSizes.length > 0
-        ? { sizes: selectedSizes.map((preset) => ({ width: preset.width, height: preset.height, label: preset.label ?? `${preset.width}x${preset.height}` })) }
+        ? { sizes: selectedSizes.map((preset) => toSelectedSize(preset)) }
         : {}),
       ...(cropEnabled && cropRegions.regions.length > 0 ? { crops: cropRegions.regions } : {}),
     };

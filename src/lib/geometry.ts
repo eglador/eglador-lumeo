@@ -54,6 +54,25 @@ export function centeredRectForAspect(bounds: Bounds, aspect?: number): Rect {
 }
 
 /**
+ * Builds a centered rect matching an exact pixel size, scaled down (preserving
+ * aspect) if it doesn't fit within bounds. Used for custom width/height input
+ * so the crop box actually reflects the size the user typed.
+ */
+export function centeredRectForSize(bounds: Bounds, width: number, height: number): Rect {
+  let w = width;
+  let h = height;
+  const scale = Math.min(bounds.width / w, bounds.height / h, 1);
+  w *= scale;
+  h *= scale;
+  return {
+    x: (bounds.width - w) / 2,
+    y: (bounds.height - h) / 2,
+    width: w,
+    height: h,
+  };
+}
+
+/**
  * Computes the next rect while dragging a handle by (dx, dy) display pixels.
  * Corner handles anchor the opposite corner and, when an aspect ratio is
  * locked, derive the secondary dimension from whichever axis moved more.

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -37,6 +37,30 @@ export const BottomRightCorner: Story = {
         </p>
         <LumeoMiniViewer
           corner="bottom-right"
+          onImageClick={(image) => alert(`Tıklandı: ${image.fileName}`)}
+        />
+      </div>
+    </LumeoProvider>
+  ),
+};
+
+/**
+ * `position="fixed"` widgets are draggable by their header: grab the title bar and drop the
+ * widget anywhere on the page. Collapsing it (the chevron button) shrinks it into a small
+ * floating chip — icon, image count, and the same header drag handle — so it stays out of the
+ * way without losing its position.
+ */
+export const DraggableViewer: Story = {
+  render: () => (
+    <LumeoProvider config={config}>
+      <div style={{ height: "70vh", position: "relative" }}>
+        <p style={{ padding: 16, color: "#9ca3af", fontSize: 13 }}>
+          Widget'ı başlığından tutup sayfada istediğiniz yere sürükleyebilirsiniz. Sağ üstteki ok
+          ikonuyla kapatırsanız küçük bir kutuya dönüşür — o kutuyu da aynı şekilde sürükleyip
+          taşıyabilirsiniz.
+        </p>
+        <LumeoMiniViewer
+          corner="top-right"
           onImageClick={(image) => alert(`Tıklandı: ${image.fileName}`)}
         />
       </div>
@@ -168,6 +192,71 @@ export const EmbeddedWithPlainInputAndTextarea: Story = {
   render: () => (
     <LumeoProvider config={config}>
       <PlainFieldsHarness />
+    </LumeoProvider>
+  ),
+};
+
+function SingleInputHarness() {
+  const [inputValue, setInputValue] = useState("");
+
+  return (
+    <div style={{ height: "70vh", position: "relative", padding: 16 }}>
+      <label style={{ display: "flex", maxWidth: 420, flexDirection: "column", gap: 4, fontSize: 12, color: "#3f3f46" }}>
+        Kapak görseli (input)
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(event) => setInputValue(event.target.value)}
+          placeholder="Bir görseli buraya sürükleyip bırakın ya da tıklayın…"
+          style={fieldStyle}
+        />
+      </label>
+      <LumeoMiniViewer
+        corner="bottom-right"
+        onImageClick={(image) => setInputValue(image.id)}
+        dragData={{
+          pattern: "#resim#[RESIMID]#",
+          placeholder: "[RESIMID]",
+          getValue: (image) => image.id,
+        }}
+      />
+    </div>
+  );
+}
+
+/**
+ * Minimal single-field integration: one `<input>`, no editor or textarea. `position="fixed"`
+ * (the default) pins the widget to the bottom-right corner, but — like any fixed widget — it's
+ * draggable by its header afterward, and collapses into a small chip via the chevron button.
+ * Clicking a thumbnail writes its id directly into the field (`onImageClick`); dragging one onto
+ * the field inserts the configured pattern at the caret via native `text/plain` drop support.
+ */
+export const EmbeddedWithSingleInput: Story = {
+  render: () => (
+    <LumeoProvider config={config}>
+      <SingleInputHarness />
+    </LumeoProvider>
+  ),
+};
+
+/**
+ * `defaultCollapsed` renders the widget as a small chip on first mount instead of fully
+ * expanded — useful when you want it out of the way until the user actually needs it.
+ */
+export const StartsCollapsed: Story = {
+  render: () => (
+    <LumeoProvider config={config}>
+      <div style={{ height: "70vh", position: "relative" }}>
+        <p style={{ padding: 16, color: "#9ca3af", fontSize: 13 }}>
+          <code>defaultCollapsed</code> ile widget ilk açılışta küçük kutu halinde başlar; ok
+          ikonuna tıklayınca genişler.
+        </p>
+        <LumeoMiniViewer
+          corner="bottom-right"
+          defaultCollapsed
+          onImageClick={(image) => alert(`Tıklandı: ${image.fileName}`)}
+        />
+      </div>
     </LumeoProvider>
   ),
 };

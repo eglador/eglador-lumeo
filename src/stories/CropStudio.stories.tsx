@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CropStudio } from "../components/ImageModal/CropStudio/CropStudio";
 import { useCropRegions } from "../hooks/useCropRegions";
 import { getMessages } from "../lib/i18n";
