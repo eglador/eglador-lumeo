@@ -9,6 +9,7 @@ import { saveImageMeta, deleteImage } from "../../lib/api";
 import { refreshOnce } from "../../lib/refreshOnce";
 import { getMessages, dateLocaleTag } from "../../lib/i18n";
 import { primaryButton, outlineButton, dangerButton, sectionLabel, iconButton } from "../../styles/editorial";
+import { LoadingBar } from "../shared/LoadingBar";
 import { TypeSelector } from "./TypeSelector";
 import { CropTabs } from "./CropStudio/CropTabs";
 import type { LumeoImage } from "../../types";
@@ -60,6 +61,16 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
     });
   };
 
+  const handleToggleCrop = () => {
+    setCropEnabled((value) => {
+      const next = !value;
+      // Resize/crop and usage-type tagging are mutually exclusive — entering crop mode
+      // clears any chosen type so a save can't carry both at once.
+      if (next) setSelectedType(undefined);
+      return next;
+    });
+  };
+
   const handleDelete = () => {
     setIsDeleting(true);
     const actionPromise = deleteImage(config, image.id);
@@ -91,6 +102,8 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
           </button>
         </div>
 
+        {config.waitForSuccess && (isSaving || isDeleting) && <LoadingBar />}
+
         <div className="lumeo:flex lumeo:flex-1 lumeo:flex-col lumeo:gap-6 lumeo:overflow-y-auto lumeo:p-6 lumeo:md:flex-row">
           <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4">
             {cropEnabled ? (
@@ -112,12 +125,14 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
           </div>
 
           <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72">
-            <div>
-              <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>
-                <Tag size={12} /> {messages.usageType}
-              </p>
-              <TypeSelector options={imageTypes} value={selectedType} onChange={setSelectedType} />
-            </div>
+            {!cropEnabled && (
+              <div>
+                <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>
+                  <Tag size={12} /> {messages.usageType}
+                </p>
+                <TypeSelector options={imageTypes} value={selectedType} onChange={setSelectedType} />
+              </div>
+            )}
 
             <div className="lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-3">
               <p className={`lumeo:mb-2 ${sectionLabel}`}>{messages.info}</p>
@@ -151,7 +166,7 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
 
             <button
               type="button"
-              onClick={() => setCropEnabled((value) => !value)}
+              onClick={handleToggleCrop}
               className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-2 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${outlineButton}`}
             >
               <SlidersHorizontal size={15} />

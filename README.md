@@ -323,6 +323,41 @@ function HeadlineImages() {
 <LumeoMiniViewer corner="bottom-right" onImageClick={(image) => insertIntoEditor(image)} />
 ```
 
+By default the viewer is `position="fixed"`, pinned to a viewport corner via `corner`. Pass
+`position="static"` to embed it as a normal in-flow element inside any container you control —
+position and size it with your own CSS:
+
+```tsx
+<div className="sidebar">
+  <LumeoMiniViewer position="static" onImageClick={(image) => insertIntoEditor(image)} />
+</div>
+```
+
+#### Dragging thumbnails into an editor
+
+Pass `dragData` to make thumbnails draggable. `pattern` is a template string with a placeholder
+token (default `"{value}"`, override via `placeholder`) that gets replaced with whatever
+`getValue` returns (default: `image.id`). The result is written to `event.dataTransfer` under
+`format` (default `"text/plain"`) on `dragstart`, ready for any drop target to read.
+
+```tsx
+<LumeoMiniViewer
+  onImageClick={(image) => insertIntoEditor(image)}
+  dragData={{
+    pattern: "#resim#[RESIMID]#",
+    placeholder: "[RESIMID]",
+    getValue: (image) => image.id,
+  }}
+/>
+```
+
+**Lexical editor:** register a plugin that reads the same `format` on drop and inserts it as
+text. A copy-pasteable reference implementation lives at
+[`src/stories/lexical/ImageDropPlugin.tsx`](src/stories/lexical/ImageDropPlugin.tsx) (not
+published with the package — copy it into your app) and is wired up end-to-end in the
+`LumeoMiniViewer / EmbeddedWithLexicalEditor` Storybook story, which drags a thumbnail into a
+real `LexicalComposer` editor and drops in the configured pattern.
+
 ### Development
 
 ```bash
@@ -645,6 +680,42 @@ function ManşetGorselleri() {
 ```tsx
 <LumeoMiniViewer corner="bottom-right" onImageClick={(image) => insertIntoEditor(image)} />
 ```
+
+Varsayılan olarak görüntüleyici `position="fixed"`'dir; `corner` ile viewport'un bir köşesine
+sabitlenir. Kendi kontrol ettiğiniz bir container'ın içine, normal akışta bir eleman olarak
+gömmek için `position="static"` verin — konumlandırmayı ve boyutu kendi CSS'inizle yapın:
+
+```tsx
+<div className="sidebar">
+  <LumeoMiniViewer position="static" onImageClick={(image) => insertIntoEditor(image)} />
+</div>
+```
+
+#### Küçük resimleri bir editöre sürükleyip bırakmak
+
+Küçük resimleri sürüklenebilir yapmak için `dragData` verin. `pattern`, içinde bir yer tutucu
+token barındıran bir şablon dizesidir (varsayılan `"{value}"`, `placeholder` ile değiştirilebilir)
+ve bu token, `getValue`'nün döndürdüğü değerle (varsayılan: `image.id`) değiştirilir. Sonuç,
+`dragstart` sırasında `format` (varsayılan `"text/plain"`) altında `event.dataTransfer`'a
+yazılır; herhangi bir bırakma (drop) hedefi bunu okuyabilir.
+
+```tsx
+<LumeoMiniViewer
+  onImageClick={(image) => insertIntoEditor(image)}
+  dragData={{
+    pattern: "#resim#[RESIMID]#",
+    placeholder: "[RESIMID]",
+    getValue: (image) => image.id,
+  }}
+/>
+```
+
+**Lexical editör:** bırakma (drop) sırasında aynı `format`'ı okuyup metin olarak ekleyen bir
+plugin kaydedin. Kopyalayıp kullanabileceğiniz referans implementasyon
+[`src/stories/lexical/ImageDropPlugin.tsx`](src/stories/lexical/ImageDropPlugin.tsx) dosyasında
+(pakete dahil değildir — kendi uygulamanıza kopyalayın) ve `LumeoMiniViewer /
+EmbeddedWithLexicalEditor` Storybook örneğinde uçtan uca bağlanmış halde bulunuyor; bu örnek bir
+küçük resmi gerçek bir `LexicalComposer` editörüne sürükleyip yapılandırılmış pattern'i bırakıyor.
 
 ### Geliştirme
 

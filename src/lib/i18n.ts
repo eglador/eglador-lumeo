@@ -19,6 +19,7 @@ export interface LumeoMessages {
   loading: string;
   noImages: string;
   usageType: string;
+  imageId: string;
   info: string;
   uploadedAt: string;
   fileType: string;
@@ -66,6 +67,7 @@ const en: LumeoMessages = {
   loading: "Loading…",
   noImages: "No images yet",
   usageType: "Usage Type",
+  imageId: "Image ID",
   info: "Info",
   uploadedAt: "Uploaded At",
   fileType: "File Type",
@@ -97,7 +99,7 @@ const en: LumeoMessages = {
 
 const tr: LumeoMessages = {
   dropzoneCta: "Görselleri sürükleyip bırakın veya seçmek için tıklayın",
-  dropzoneMultiple: "Birden fazla dosya seçebilirsiniz",
+  dropzoneMultiple: "BİRDEN FAZLA DOSYA SEÇEBİLİRSİNİZ",
   dropzoneSingle: "Tek dosya seçebilirsiniz",
   rejectedCount: (count) => `${count} dosya kabul edilmedi`,
   removeFile: (name) => `${name} dosyasını kaldır`,
@@ -114,6 +116,7 @@ const tr: LumeoMessages = {
   loading: "Yükleniyor…",
   noImages: "Henüz görsel yok",
   usageType: "Kullanım Tipi",
+  imageId: "Görsel ID",
   info: "Bilgiler",
   uploadedAt: "Yükleme Tarihi",
   fileType: "Dosya Tipi",

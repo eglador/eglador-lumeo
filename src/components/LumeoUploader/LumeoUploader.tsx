@@ -10,6 +10,7 @@ import { PendingFileList } from "./PendingFileList";
 import { RejectedFileNotice } from "./RejectedFileNotice";
 import { ImageGallery } from "../Gallery/ImageGallery";
 import { ImageModal } from "../ImageModal/ImageModal";
+import { LoadingBar } from "../shared/LoadingBar";
 import { primaryButton } from "../../styles/editorial";
 import type { LumeoImage, LumeoViewMode } from "../../types";
 
@@ -48,16 +49,19 @@ export function LumeoUploader({ className, defaultViewMode = "grid" }: LumeoUplo
         <PendingFileList items={queue.pending} onRemove={queue.removePending} messages={messages} />
 
         {queue.pending.length > 0 && (
-          <div className="lumeo:flex lumeo:justify-end">
-            <button
-              type="button"
-              disabled={queue.isUploading}
-              onClick={() => queue.upload()}
-              className={`lumeo:flex lumeo:items-center lumeo:gap-2 lumeo:px-4 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${primaryButton}`}
-            >
-              <UploadCloud size={16} />
-              {queue.isUploading ? messages.uploading : messages.uploadCount(queue.pending.length)}
-            </button>
+          <div className="lumeo:flex lumeo:flex-col lumeo:gap-2">
+            {config.waitForSuccess && queue.isUploading && <LoadingBar />}
+            <div className="lumeo:flex lumeo:justify-end">
+              <button
+                type="button"
+                disabled={queue.isUploading}
+                onClick={() => queue.upload()}
+                className={`lumeo:flex lumeo:items-center lumeo:gap-2 lumeo:px-4 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${primaryButton}`}
+              >
+                <UploadCloud size={16} />
+                {queue.isUploading ? messages.uploading : messages.uploadCount(queue.pending.length)}
+              </button>
+            </div>
           </div>
         )}
 

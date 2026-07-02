@@ -16,7 +16,7 @@ export function GridView({ images, imageTypes, onSelectImage }: GridViewProps) {
           key={image.id}
           type="button"
           onClick={() => onSelectImage(image)}
-          className="lumeo:group lumeo:relative lumeo:aspect-square lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:shadow-xs lumeo:transition-shadow lumeo:hover:shadow-sm"
+          className="lumeo:group lumeo:p-0 lumeo:relative lumeo:aspect-square lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:shadow-xs lumeo:transition-shadow lumeo:hover:shadow-sm"
         >
           <img
             src={image.url}

@@ -2,16 +2,41 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Images, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useLumeoImages } from "../../hooks/useLumeoImages";
-import { resolveImageTypes } from "../../lib/imageTypes";
+import { resolveImageTypes, findImageTypeLabel } from "../../lib/imageTypes";
 import { getMessages } from "../../lib/i18n";
 import { panel, iconButton, inputBase } from "../../styles/editorial";
 import type { LumeoImage } from "../../types";
 
+/** Default token inside `LumeoMiniViewerDragConfig.pattern` that gets replaced with the resolved value. */
+const DEFAULT_DRAG_PLACEHOLDER = "{value}";
+
+export interface LumeoMiniViewerDragConfig {
+  /** Template string containing `placeholder`, e.g. `"#resim#{value}#"`. */
+  pattern: string;
+  /** Token inside `pattern` to substitute. Default: `"{value}"`. */
+  placeholder?: string;
+  /** Resolves the value substituted for `placeholder`. Default: `(image) => image.id`. */
+  getValue?: (image: LumeoImage) => string;
+  /** `dataTransfer` MIME type the payload is written to. Default: `"text/plain"`. */
+  format?: string;
+}
+
 export interface LumeoMiniViewerProps {
   /** Called when the user clicks a thumbnail; wire this into your own editor/CMS logic. */
   onImageClick: (image: LumeoImage) => void;
+  /**
+   * "fixed" (default): pinned to a viewport corner via `corner`, matching the original
+   * floating-widget behavior. "static": a normal in-flow element with no positioning
+   * classes — place and position it yourself inside any container.
+   */
+  position?: "fixed" | "static";
   corner?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
   className?: string;
+  /**
+   * Enables HTML5 drag-and-drop export of thumbnails (e.g. into a rich text editor).
+   * Omit to leave thumbnails non-draggable.
+   */
+  dragData?: LumeoMiniViewerDragConfig;
 }
 
 const CORNER_CLASS: Record<NonNullable<LumeoMiniViewerProps["corner"]>, string> = {
@@ -21,8 +46,20 @@ const CORNER_CLASS: Record<NonNullable<LumeoMiniViewerProps["corner"]>, string> 
   "bottom-right": "lumeo:bottom-4 lumeo:right-4",
 };
 
+function buildDragPayload(image: LumeoImage, config: LumeoMiniViewerDragConfig): string {
+  const token = config.placeholder ?? DEFAULT_DRAG_PLACEHOLDER;
+  const value = (config.getValue ?? ((img: LumeoImage) => img.id))(image);
+  return config.pattern.split(token).join(value);
+}
+
 /** Minimal standalone corner widget that lists uploaded images, optionally filtered by usage type. */
-export function LumeoMiniViewer({ onImageClick, corner = "bottom-right", className }: LumeoMiniViewerProps) {
+export function LumeoMiniViewer({
+  onImageClick,
+  position = "fixed",
+  corner = "bottom-right",
+  className,
+  dragData,
+}: LumeoMiniViewerProps) {
   const config = useLumeoConfig();
   const messages = useMemo(() => getMessages(config.locale), [config.locale]);
   const imageTypes = useMemo(
@@ -52,9 +89,11 @@ export function LumeoMiniViewer({ onImageClick, corner = "bottom-right", classNa
     refetch();
   };
 
+  const positionClasses = position === "fixed" ? `lumeo:fixed lumeo:z-40 ${CORNER_CLASS[corner]}` : "";
+
   return (
     <div
-      className={`lumeo-root lumeo:fixed lumeo:z-40 lumeo:w-72 lumeo:overflow-hidden lumeo:font-sans ${panel} ${CORNER_CLASS[corner]} ${className ?? ""}`}
+      className={`lumeo-root lumeo:w-72 lumeo:overflow-hidden lumeo:font-sans ${panel} ${positionClasses} ${className ?? ""}`}
     >
       <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:border-b lumeo:border-zinc-100 lumeo:px-3 lumeo:py-2.5">
         <p className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-xs lumeo:font-semibold lumeo:text-zinc-900">
@@ -111,20 +150,54 @@ export function LumeoMiniViewer({ onImageClick, corner = "bottom-right", classNa
                 {messages.noImages}
               </p>
             ) : (
-              images.map((image) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  onClick={() => onImageClick(image)}
-                  className="lumeo:aspect-square lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:transition-transform lumeo:hover:scale-105"
-                >
-                  <img
-                    src={image.url}
-                    alt={image.fileName}
-                    className="lumeo:h-full lumeo:w-full lumeo:object-cover"
-                  />
-                </button>
-              ))
+              images.map((image) => {
+                const typeLabel = image.type ? (findImageTypeLabel(image.type, imageTypes) ?? image.type) : undefined;
+                return (
+                  <button
+                    key={image.id}
+                    type="button"
+                    onClick={() => onImageClick(image)}
+                    draggable={Boolean(dragData)}
+                    onDragStart={
+                      dragData
+                        ? (event) => {
+                            event.dataTransfer.setData(
+                              dragData.format ?? "text/plain",
+                              buildDragPayload(image, dragData)
+                            );
+                            event.dataTransfer.effectAllowed = "copy";
+                          }
+                        : undefined
+                    }
+                    className="lumeo:group lumeo:relative lumeo:aspect-square lumeo:p-0 lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:transition-transform"
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.fileName}
+                      draggable={false}
+                      className="lumeo:h-full lumeo:w-full lumeo:object-cover"
+                    />
+                    <div className="lumeo:absolute lumeo:inset-x-0 lumeo:bottom-0 lumeo:flex lumeo:flex-col lumeo:items-start lumeo:gap-0.5 lumeo:bg-linear-to-t lumeo:from-black/80 lumeo:to-transparent lumeo:px-1 lumeo:pt-3 lumeo:pb-1">
+                      {typeLabel && (
+                        <span className="lumeo:max-w-full lumeo:truncate lumeo:rounded-xs lumeo:bg-zinc-900/90 lumeo:px-1 lumeo:text-[8px] lumeo:leading-3.5 lumeo:font-medium lumeo:text-white">
+                          {typeLabel}
+                        </span>
+                      )}
+                      {image.width && image.height && (
+                        <span className="lumeo:text-[8px] lumeo:leading-2.5 lumeo:font-medium lumeo:text-white/90">
+                          {image.width}×{image.height}
+                        </span>
+                      )}
+                      <span
+                        className="lumeo:w-full lumeo:truncate lumeo:text-[8px] lumeo:leading-2.5 lumeo:text-white/70"
+                        title={image.id}
+                      >
+                        {image.id}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>

@@ -51,4 +51,7 @@ export { ImageModal } from "./components/ImageModal/ImageModal";
 export type { ImageModalProps } from "./components/ImageModal/ImageModal";
 
 export { LumeoMiniViewer } from "./components/MiniViewer/LumeoMiniViewer";
-export type { LumeoMiniViewerProps } from "./components/MiniViewer/LumeoMiniViewer";
+export type {
+  LumeoMiniViewerProps,
+  LumeoMiniViewerDragConfig,
+} from "./components/MiniViewer/LumeoMiniViewer";

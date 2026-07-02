@@ -35,6 +35,14 @@ const HANDLE_POSITION: Record<HandleId, { top: string; left: string }> = {
   w: { top: "50%", left: "0%" },
 };
 
+/** Which two sides get a thick border to draw an L-shaped corner bracket. */
+const CORNER_BORDER_CLASSES: Partial<Record<HandleId, string>> = {
+  nw: "lumeo:border-t-[3px] lumeo:border-l-[3px]",
+  ne: "lumeo:border-t-[3px] lumeo:border-r-[3px]",
+  se: "lumeo:border-b-[3px] lumeo:border-r-[3px]",
+  sw: "lumeo:border-b-[3px] lumeo:border-l-[3px]",
+};
+
 export function CropOverlay({
   region,
   aspect,
@@ -50,6 +58,7 @@ export function CropOverlay({
   const bottomMaskRef = useRef<HTMLDivElement>(null);
   const leftMaskRef = useRef<HTMLDivElement>(null);
   const rightMaskRef = useRef<HTMLDivElement>(null);
+  const readoutRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{
     kind: "move" | HandleId;
     startPointer: { x: number; y: number };
@@ -59,6 +68,9 @@ export function CropOverlay({
   const naturalToDisplayScale = displayBounds.width / (naturalSize.width || 1);
   const displayToNaturalScale = naturalSize.width / (displayBounds.width || 1);
   const displayRect = scaleRect(region, naturalToDisplayScale);
+
+  const formatReadout = (rect: Rect) =>
+    `${Math.round(rect.x)}, ${Math.round(rect.y)} · ${Math.round(rect.width)}×${Math.round(rect.height)}`;
 
   const applyDisplayRect = (rect: Rect) => {
     const box = boxRef.current;
@@ -81,6 +93,10 @@ export function CropOverlay({
       rightMaskRef.current.style.left = `${rect.x + rect.width}px`;
       rightMaskRef.current.style.top = `${rect.y}px`;
       rightMaskRef.current.style.height = `${rect.height}px`;
+    }
+    // Live natural-pixel readout, kept in sync during drag the same way as the mask.
+    if (readoutRef.current) {
+      readoutRef.current.textContent = formatReadout(scaleRect(rect, displayToNaturalScale));
     }
   };
 
@@ -136,7 +152,7 @@ export function CropOverlay({
     return (
       <div
         onPointerDown={onActivate}
-        className="lumeo:absolute lumeo:cursor-pointer lumeo:border-2 lumeo:border-dashed lumeo:opacity-60"
+        className="lumeo:absolute lumeo:box-border lumeo:cursor-pointer lumeo:border-2 lumeo:border-dashed lumeo:opacity-60"
         style={{
           left: displayRect.x,
           top: displayRect.y,
@@ -182,7 +198,7 @@ export function CropOverlay({
         onPointerDown={startDrag("move")}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
-        className="lumeo:absolute lumeo:cursor-move lumeo:border-2"
+        className="lumeo:absolute lumeo:box-border lumeo:cursor-move lumeo:border-2"
         style={{
           left: displayRect.x,
           top: displayRect.y,
@@ -191,21 +207,35 @@ export function CropOverlay({
           borderColor: color,
         }}
       >
-        {handles.map((handle) => (
-          <div
-            key={handle}
-            onPointerDown={startDrag(handle)}
-            onPointerMove={handlePointerMove}
-            onPointerUp={endDrag}
-            className="lumeo:absolute lumeo:h-3 lumeo:w-3 lumeo:rounded-full lumeo:border lumeo:border-white lumeo:bg-zinc-900 lumeo:shadow"
-            style={{
-              top: HANDLE_POSITION[handle].top,
-              left: HANDLE_POSITION[handle].left,
-              transform: "translate(-50%, -50%)",
-              cursor: `${handle}-resize`,
-            }}
-          />
-        ))}
+        <div
+          ref={readoutRef}
+          className="lumeo:pointer-events-none lumeo:absolute lumeo:-top-6 lumeo:left-0 lumeo:whitespace-nowrap lumeo:rounded-sm lumeo:bg-zinc-900 lumeo:px-1.5 lumeo:py-0.5 lumeo:text-[10px] lumeo:font-medium lumeo:tabular-nums lumeo:text-white lumeo:shadow"
+        >
+          {formatReadout(region)}
+        </div>
+        {handles.map((handle) => {
+          const cornerBorder = CORNER_BORDER_CLASSES[handle];
+          return (
+            <div
+              key={handle}
+              onPointerDown={startDrag(handle)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={endDrag}
+              className={
+                cornerBorder
+                  ? `lumeo:absolute lumeo:box-border lumeo:h-5 lumeo:w-5 ${cornerBorder}`
+                  : "lumeo:absolute lumeo:box-border lumeo:h-4 lumeo:w-4"
+              }
+              style={{
+                top: HANDLE_POSITION[handle].top,
+                left: HANDLE_POSITION[handle].left,
+                transform: "translate(-50%, -50%)",
+                cursor: `${handle}-resize`,
+                borderColor: cornerBorder ? color : undefined,
+              }}
+            />
+          );
+        })}
       </div>
     </>
   );

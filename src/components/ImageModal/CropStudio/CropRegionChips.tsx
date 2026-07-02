@@ -17,7 +17,7 @@ export function CropRegionChips({ regionsApi, messages }: CropRegionChipsProps) 
   }
 
   return (
-    <ul className="lumeo:list-none lumeo:flex lumeo:flex-col lumeo:gap-1.5">
+    <ul className="lumeo:list-none lumeo:flex lumeo:flex-col lumeo:gap-1.5 lumeo:p-0">
       {regionsApi.regions.map((region, index) => (
         <li
           key={region.id}

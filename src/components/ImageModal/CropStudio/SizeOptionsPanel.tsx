@@ -1,4 +1,3 @@
-import { Check } from "lucide-react";
 import { formatSizeLabel } from "../../../lib/sizePresets";
 import type { SizePresetOption } from "../../../types";
 import type { UseSizeSelectionsResult } from "../../../hooks/useSizeSelections";
@@ -20,40 +19,36 @@ export function SizeOptionsPanel({ presets, selection, messages }: SizeOptionsPa
   }
 
   return (
-    <div className="lumeo:grid lumeo:grid-cols-2 lumeo:gap-2 lumeo:sm:grid-cols-3">
+    <div className="lumeo:flex lumeo:flex-col lumeo:divide-y lumeo:divide-zinc-100 lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200">
       {presets.map((preset) => {
         const active = selection.isSelected(preset.id);
         const ratio = preset.width / preset.height;
         return (
-          <button
+          <label
             key={preset.id}
-            type="button"
-            onClick={() => selection.toggle(preset.id)}
-            className={`lumeo:flex lumeo:flex-col lumeo:items-center lumeo:gap-2 lumeo:rounded-sm lumeo:border lumeo:px-3 lumeo:py-3 lumeo:text-xs lumeo:font-medium lumeo:transition-colors ${
-              active
-                ? "lumeo:border-zinc-900 lumeo:bg-zinc-900 lumeo:text-white"
-                : "lumeo:border-zinc-300 lumeo:bg-white lumeo:text-zinc-600 lumeo:hover:bg-zinc-50"
+            className={`lumeo:flex lumeo:cursor-pointer lumeo:items-center lumeo:gap-3 lumeo:px-3 lumeo:py-2.5 lumeo:text-xs lumeo:font-medium lumeo:transition-colors lumeo:focus-within:ring-2 lumeo:focus-within:ring-zinc-900/20 lumeo:focus-within:ring-offset-1 ${
+              active ? "lumeo:bg-zinc-900 lumeo:text-white" : "lumeo:text-zinc-600 lumeo:hover:bg-zinc-50"
             }`}
           >
-            <span
-              className={`lumeo:flex lumeo:h-8 lumeo:w-11 lumeo:items-center lumeo:justify-center lumeo:rounded-sm lumeo:border ${
-                active ? "lumeo:border-white/60" : "lumeo:border-zinc-300"
-              }`}
-            >
-              {active ? (
-                <Check size={14} />
-              ) : (
-                <span
-                  className="lumeo:block lumeo:border lumeo:border-current lumeo:opacity-70"
-                  style={{
-                    width: ratio >= 1 ? 22 : 22 * ratio,
-                    height: ratio >= 1 ? 22 / ratio : 22,
-                  }}
-                />
-              )}
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={() => selection.toggle(preset.id)}
+              className="lumeo:sr-only"
+            />
+            <span className="lumeo:flex lumeo:h-8 lumeo:w-11 lumeo:shrink-0 lumeo:items-center lumeo:justify-center">
+              <span
+                className={`lumeo:block lumeo:rounded-xs lumeo:border-2 lumeo:border-current lumeo:opacity-80 ${
+                  active ? "lumeo:text-white" : "lumeo:text-zinc-400"
+                }`}
+                style={{
+                  width: ratio >= 1 ? 26 : 26 * ratio,
+                  height: ratio >= 1 ? 26 / ratio : 26,
+                }}
+              />
             </span>
             {formatSizeLabel(preset)}
-          </button>
+          </label>
         );
       })}
     </div>
