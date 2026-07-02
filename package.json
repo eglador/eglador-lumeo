@@ -66,7 +66,17 @@
     "tailwindcss": "^4.3.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11"
+    "vite": "^6.4.3"
+  },
+  "overrides": {
+    "tsup": {
+      "esbuild": "^0.28.1"
+    },
+    "@storybook/addon-essentials": {
+      "@storybook/addon-actions": {
+        "uuid": "^11.1.1"
+      }
+    }
   },
   "keywords": [
     "react",
