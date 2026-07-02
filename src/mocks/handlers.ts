@@ -1,5 +1,5 @@
 import { http, HttpResponse, delay } from "msw";
-import type { LumeoImage } from "../types";
+import type { LumeoImage, SaveImagePayload } from "../types";
 
 const initialImages: LumeoImage[] = [
   {
@@ -49,14 +49,14 @@ const initialImages: LumeoImage[] = [
 
 let mockImages: LumeoImage[] = [...initialImages];
 
-function buildHandlers(uploadDelayMs: number) {
+function buildHandlers(writeDelayMs: number) {
   return [
     http.get("/api/mock/list", () => {
       return HttpResponse.json({ images: mockImages });
     }),
 
     http.post("/api/mock/upload", async ({ request }) => {
-      if (uploadDelayMs > 0) await delay(uploadDelayMs);
+      if (writeDelayMs > 0) await delay(writeDelayMs);
       const formData = await request.formData();
       const files = formData.getAll("files") as File[];
       const newImages: LumeoImage[] = files.map((file, index) => ({
@@ -73,15 +73,57 @@ function buildHandlers(uploadDelayMs: number) {
       return HttpResponse.json({ success: true, images: newImages });
     }),
 
+    // Demo-only: a picked size preset or crop region produces a brand new derived
+    // mock image (one per size/crop) instead of overwriting the source — matching
+    // how a real backend would emit new resized/cropped output files. A plain
+    // type-only save (no size/crop) still updates the source image in place.
     http.post("/api/mock/save", async ({ request }) => {
-      const body = (await request.json()) as { id: string; type?: string };
-      mockImages = mockImages.map((image) =>
-        image.id === body.id ? { ...image, type: body.type } : image
-      );
+      if (writeDelayMs > 0) await delay(writeDelayMs);
+      const body = (await request.json()) as SaveImagePayload;
+      const source = mockImages.find((image) => image.id === body.id);
+
+      const derived: LumeoImage[] = [];
+      if (source) {
+        body.crops?.forEach((crop, index) => {
+          const width = Math.round(crop.width);
+          const height = Math.round(crop.height);
+          derived.push({
+            ...source,
+            id: `img-${Date.now()}-crop-${index}`,
+            fileName: `${source.fileName} (${crop.name})`,
+            url: `https://picsum.photos/seed/${source.id}-crop-${index}/${width}/${height}`,
+            uploadedAt: new Date().toISOString(),
+            width,
+            height,
+            type: undefined,
+          });
+        });
+        body.sizes?.forEach((size, index) => {
+          const width = Math.round(size.width);
+          const height = Math.round(size.height);
+          derived.push({
+            ...source,
+            id: `img-${Date.now()}-size-${index}`,
+            fileName: `${source.fileName} (${size.label})`,
+            url: `https://picsum.photos/seed/${source.id}-size-${index}/${width}/${height}`,
+            uploadedAt: new Date().toISOString(),
+            width,
+            height,
+            type: undefined,
+          });
+        });
+      }
+
+      mockImages =
+        derived.length > 0
+          ? [...derived, ...mockImages]
+          : mockImages.map((image) => (image.id === body.id ? { ...image, type: body.type } : image));
+
       return HttpResponse.json({ success: true });
     }),
 
     http.delete("/api/mock/delete", async ({ request }) => {
+      if (writeDelayMs > 0) await delay(writeDelayMs);
       const body = (await request.json()) as { id: string };
       mockImages = mockImages.filter((image) => image.id !== body.id);
       return HttpResponse.json({ success: true });

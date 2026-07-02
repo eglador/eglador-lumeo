@@ -46,6 +46,11 @@ export interface LumeoMessages {
   show: string;
   hide: string;
   all: string;
+  cancel: string;
+  confirmDeleteTitle: string;
+  confirmDeleteMessage: string;
+  confirmSaveTitle: string;
+  confirmSaveMessage: string;
 }
 
 const en: LumeoMessages = {
@@ -95,6 +100,11 @@ const en: LumeoMessages = {
   show: "Show",
   hide: "Hide",
   all: "All",
+  cancel: "Cancel",
+  confirmDeleteTitle: "Delete this image?",
+  confirmDeleteMessage: "This action cannot be undone.",
+  confirmSaveTitle: "Save changes?",
+  confirmSaveMessage: "This will update the image right away.",
 };
 
 const tr: LumeoMessages = {
@@ -144,6 +154,11 @@ const tr: LumeoMessages = {
   show: "Göster",
   hide: "Gizle",
   all: "Tümü",
+  cancel: "Vazgeç",
+  confirmDeleteTitle: "Bu görsel silinsin mi?",
+  confirmDeleteMessage: "Bu işlem geri alınamaz.",
+  confirmSaveTitle: "Değişiklikler kaydedilsin mi?",
+  confirmSaveMessage: "Görsel hemen güncellenecek.",
 };
 
 const MESSAGES: Record<LumeoLocale, LumeoMessages> = { en, tr };

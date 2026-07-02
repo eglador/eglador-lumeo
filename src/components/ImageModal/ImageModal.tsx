@@ -10,6 +10,7 @@ import { refreshOnce } from "../../lib/refreshOnce";
 import { getMessages, dateLocaleTag } from "../../lib/i18n";
 import { primaryButton, outlineButton, dangerButton, sectionLabel, iconButton } from "../../styles/editorial";
 import { LoadingBar } from "../shared/LoadingBar";
+import { ConfirmDialog } from "../shared/ConfirmDialog";
 import { TypeSelector } from "./TypeSelector";
 import { CropTabs } from "./CropStudio/CropTabs";
 import type { LumeoImage } from "../../types";
@@ -37,6 +38,7 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
   const [cropEnabled, setCropEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"save" | "delete" | null>(null);
   const cropRegions = useCropRegions();
   const sizeSelection = useSizeSelections();
 
@@ -82,118 +84,148 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
   };
 
   return (
-    <div
-      className="lumeo-root lumeo:fixed lumeo:inset-0 lumeo:z-50 lumeo:flex lumeo:items-center lumeo:justify-center lumeo:bg-zinc-900/50 lumeo:p-4 lumeo:font-sans lumeo:backdrop-blur-sm lumeo:animate-fade-in"
-      onClick={onClose}
-    >
+    <>
       <div
-        className="lumeo:flex lumeo:max-h-[92vh] lumeo:w-full lumeo:max-w-6xl lumeo:flex-col lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:shadow-lg lumeo:animate-scale-in"
-        onClick={(event) => event.stopPropagation()}
+        className="lumeo-root lumeo:fixed lumeo:inset-0 lumeo:z-50 lumeo:flex lumeo:items-center lumeo:justify-center lumeo:bg-zinc-900/50 lumeo:p-4 lumeo:font-sans lumeo:backdrop-blur-sm lumeo:animate-fade-in"
+        onClick={onClose}
       >
-        <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:border-b lumeo:border-zinc-100 lumeo:px-6 lumeo:py-4">
-          <p className="lumeo:truncate lumeo:text-lg lumeo:font-semibold lumeo:text-zinc-900">{image.fileName}</p>
-          <button
-            type="button"
-            onClick={onClose}
-            className={`lumeo:h-8 lumeo:w-8 ${iconButton}`}
-            aria-label={messages.close}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {config.waitForSuccess && (isSaving || isDeleting) && <LoadingBar />}
-
-        <div className="lumeo:flex lumeo:flex-1 lumeo:flex-col lumeo:gap-6 lumeo:overflow-y-auto lumeo:p-6 lumeo:md:flex-row">
-          <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4">
-            {cropEnabled ? (
-              <CropTabs
-                image={image}
-                sizePresets={sizePresets}
-                sizeSelection={sizeSelection}
-                defaultAspect={selectedTypeOption?.aspect}
-                regionsApi={cropRegions}
-                messages={messages}
-              />
-            ) : (
-              <img
-                src={image.url}
-                alt={image.fileName}
-                className="lumeo:max-h-[420px] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
-              />
-            )}
-          </div>
-
-          <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72">
-            {!cropEnabled && (
-              <div>
-                <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>
-                  <Tag size={12} /> {messages.usageType}
-                </p>
-                <TypeSelector options={imageTypes} value={selectedType} onChange={setSelectedType} />
-              </div>
-            )}
-
-            <div className="lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-3">
-              <p className={`lumeo:mb-2 ${sectionLabel}`}>{messages.info}</p>
-              <dl className="lumeo:space-y-1.5 lumeo:text-xs lumeo:text-zinc-600">
-                <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
-                  <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
-                    <Calendar size={12} /> {messages.uploadedAt}
-                  </dt>
-                  <dd>{new Date(image.uploadedAt).toLocaleString(dateLocale)}</dd>
-                </div>
-                {image.mimeType && (
-                  <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
-                    <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
-                      <FileType size={12} /> {messages.fileType}
-                    </dt>
-                    <dd>{image.mimeType}</dd>
-                  </div>
-                )}
-                {image.width && image.height && (
-                  <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
-                    <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
-                      <Ratio size={12} /> {messages.dimensions}
-                    </dt>
-                    <dd>
-                      {image.width}×{image.height}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-
+        <div
+          className="lumeo:flex lumeo:max-h-[92vh] lumeo:w-full lumeo:max-w-6xl lumeo:flex-col lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:shadow-lg lumeo:animate-scale-in"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:border-b lumeo:border-zinc-100 lumeo:px-6 lumeo:py-4">
+            <p className="lumeo:truncate lumeo:text-lg lumeo:font-semibold lumeo:text-zinc-900">{image.fileName}</p>
             <button
               type="button"
-              onClick={handleToggleCrop}
-              className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-2 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${outlineButton}`}
+              onClick={onClose}
+              className={`lumeo:h-8 lumeo:w-8 ${iconButton}`}
+              aria-label={messages.close}
             >
-              <SlidersHorizontal size={15} />
-              {cropEnabled ? messages.closeResizeAndCrop : messages.resizeAndCrop}
+              <X size={16} />
             </button>
+          </div>
 
-            <div className="lumeo:mt-auto lumeo:flex lumeo:gap-2 lumeo:pt-2">
+          {config.waitForSuccess && (isSaving || isDeleting) && <LoadingBar />}
+
+          <div className="lumeo:flex lumeo:flex-1 lumeo:flex-col lumeo:gap-6 lumeo:overflow-y-auto lumeo:p-6 lumeo:md:flex-row">
+            <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4">
+              {cropEnabled ? (
+                <CropTabs
+                  image={image}
+                  sizePresets={sizePresets}
+                  sizeSelection={sizeSelection}
+                  defaultAspect={selectedTypeOption?.aspect}
+                  regionsApi={cropRegions}
+                  messages={messages}
+                />
+              ) : (
+                <img
+                  src={image.url}
+                  alt={image.fileName}
+                  className="lumeo:max-h-[420px] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
+                />
+              )}
+            </div>
+
+            <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72">
+              {!cropEnabled && (
+                <div>
+                  <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>
+                    <Tag size={12} /> {messages.usageType}
+                  </p>
+                  <TypeSelector options={imageTypes} value={selectedType} onChange={setSelectedType} />
+                </div>
+              )}
+
+              <div className="lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-3">
+                <p className={`lumeo:mb-2 ${sectionLabel}`}>{messages.info}</p>
+                <dl className="lumeo:space-y-1.5 lumeo:text-xs lumeo:text-zinc-600">
+                  <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
+                    <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
+                      <Calendar size={12} /> {messages.uploadedAt}
+                    </dt>
+                    <dd>{new Date(image.uploadedAt).toLocaleString(dateLocale)}</dd>
+                  </div>
+                  {image.mimeType && (
+                    <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
+                      <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
+                        <FileType size={12} /> {messages.fileType}
+                      </dt>
+                      <dd>{image.mimeType}</dd>
+                    </div>
+                  )}
+                  {image.width && image.height && (
+                    <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:gap-2">
+                      <dt className="lumeo:flex lumeo:items-center lumeo:gap-1.5 lumeo:text-zinc-400">
+                        <Ratio size={12} /> {messages.dimensions}
+                      </dt>
+                      <dd>
+                        {image.width}×{image.height}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </div>
+
               <button
                 type="button"
-                disabled={isDeleting}
-                onClick={handleDelete}
-                className={`lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:gap-1.5 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${dangerButton}`}
+                onClick={handleToggleCrop}
+                className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-2 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${outlineButton}`}
               >
-                <Trash2 size={15} /> {messages.delete}
+                <SlidersHorizontal size={15} />
+                {cropEnabled ? messages.closeResizeAndCrop : messages.resizeAndCrop}
               </button>
-              <button
-                type="button"
-                disabled={isSaving}
-                onClick={handleSave}
-                className={`lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:gap-1.5 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${primaryButton}`}
-              >
-                <Save size={15} /> {messages.save}
-              </button>
+
+              <div className="lumeo:mt-auto lumeo:flex lumeo:gap-2 lumeo:pt-2">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setConfirmAction("delete")}
+                  className={`lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:gap-1.5 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${dangerButton}`}
+                >
+                  <Trash2 size={15} /> {messages.delete}
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => setConfirmAction("save")}
+                  className={`lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:gap-1.5 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${primaryButton}`}
+                >
+                  <Save size={15} /> {messages.save}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {confirmAction === "delete" && (
+        <ConfirmDialog
+          title={messages.confirmDeleteTitle}
+          message={messages.confirmDeleteMessage}
+          confirmLabel={messages.delete}
+          cancelLabel={messages.cancel}
+          tone="danger"
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() => {
+            setConfirmAction(null);
+            handleDelete();
+          }}
+        />
+      )}
+      {confirmAction === "save" && (
+        <ConfirmDialog
+          title={messages.confirmSaveTitle}
+          message={messages.confirmSaveMessage}
+          confirmLabel={messages.save}
+          cancelLabel={messages.cancel}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() => {
+            setConfirmAction(null);
+            handleSave();
+          }}
+        />
+      )}
+    </>
   );
 }

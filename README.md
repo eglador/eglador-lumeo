@@ -280,6 +280,52 @@ the original image's natural pixel space, `x`/`y` from the top-left corner:
 { "success": true }
 ```
 
+**What your backend should do with `sizes` / `crops`:** each entry is a request for a **new
+derived output**, not a mutation of the original image. For every entry, generate the
+resized/cropped file (using `width`/`height`, or the `crops[].x/y/width/height` region cut from
+the original) and persist it as its **own** `LumeoImage` record — its own `id`, its own `url`. The
+original image record is left untouched (only `type` is updated on it, if sent). The package
+itself does nothing more than send this payload and refetch `list` right after — it never reads
+or interprets `sizes`/`crops` beyond that, so this behavior is entirely up to your backend.
+
+Concretely, after payload **(b)** above (two size presets picked), the very next `GET list` call
+is expected to include two brand new entries alongside the untouched original:
+
+```json
+{
+  "images": [
+    {
+      "id": "img_9f1c2a",
+      "fileName": "headline-image.jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a.jpg",
+      "uploadedAt": "2026-07-01T20:15:30.000Z",
+      "type": "manset",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "img_9f1c2a_1024x768",
+      "fileName": "headline-image (1024x768).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_1024x768.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "id": "img_9f1c2a_400x400",
+      "fileName": "headline-image (400x400).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_400x400.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 400,
+      "height": 400
+    }
+  ]
+}
+```
+
+`src/mocks/handlers.ts` implements exactly this behavior and backs the
+`ImageModal / SaveUpdatesTheList` Storybook story — open it to see the full round trip live.
+
 ---
 
 ##### 4) `endpoints.delete` — `DELETE`
@@ -637,6 +683,53 @@ birleşimi).
 ```json
 { "success": true }
 ```
+
+**Backend'iniz `sizes` / `crops` ile ne yapmalı:** buradaki her bir eleman, orijinal görselin
+değiştirilmesi değil, **yeni bir türetilmiş çıktı** talebidir. Her eleman için ilgili
+boyutlandırılmış/kırpılmış dosyayı üretin (`width`/`height`'ı, ya da `crops[].x/y/width/height`
+bölgesini orijinalden kırparak) ve bunu **kendi** `LumeoImage` kaydı olarak saklayın — kendi `id`'si,
+kendi `url`'i ile. Orijinal görsel kaydı dokunulmadan kalır (gönderildiyse sadece `type` alanı
+güncellenir). Paketin kendisi bu payload'ı gönderip hemen ardından `list`'i yeniden çekmekten
+fazlasını yapmaz — `sizes`/`crops` içeriğini bunun ötesinde hiç yorumlamaz, dolayısıyla bu davranış
+tamamen backend'inize kalmıştır.
+
+Somut olarak, yukarıdaki **(b)** payload'ından sonra (iki hazır boyut seçildi), bir sonraki
+`GET list` çağrısının, dokunulmamış orijinalin yanında iki yepyeni kayıt içermesi beklenir:
+
+```json
+{
+  "images": [
+    {
+      "id": "img_9f1c2a",
+      "fileName": "manset-gorseli.jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a.jpg",
+      "uploadedAt": "2026-07-01T20:15:30.000Z",
+      "type": "manset",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "img_9f1c2a_1024x768",
+      "fileName": "manset-gorseli (1024x768).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_1024x768.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "id": "img_9f1c2a_400x400",
+      "fileName": "manset-gorseli (400x400).jpg",
+      "url": "https://cdn.example.com/uploads/img_9f1c2a_400x400.jpg",
+      "uploadedAt": "2026-07-01T20:16:02.000Z",
+      "width": 400,
+      "height": 400
+    }
+  ]
+}
+```
+
+`src/mocks/handlers.ts` tam olarak bu davranışı uygular ve `ImageModal / SaveUpdatesTheList`
+Storybook örneğinin arkasındaki mock sunucudur — uçtan uca akışı canlı görmek için açabilirsiniz.
 
 ---
 
