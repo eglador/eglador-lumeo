@@ -1,18 +1,24 @@
 {
   "name": "eglador-lumeo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Drag & drop image upload, gallery, tagging and cropping toolkit for Next.js",
   "author": {
     "name": "Umut Yaldız",
     "url": "https://github.com/umutyaldiz"
   },
+  "contributors": [
+    {
+      "name": "Eglador",
+      "url": "https://github.com/eglador"
+    }
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/umutyaldiz/eglador-lumeo.git"
+    "url": "git+https://github.com/eglador/eglador-lumeo.git"
   },
-  "homepage": "https://github.com/umutyaldiz/eglador-lumeo#readme",
+  "homepage": "https://github.com/eglador/eglador-lumeo#readme",
   "bugs": {
-    "url": "https://github.com/umutyaldiz/eglador-lumeo/issues"
+    "url": "https://github.com/eglador/eglador-lumeo/issues"
   },
   "type": "module",
   "main": "./dist/index.cjs",
