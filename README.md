@@ -6,6 +6,17 @@ Drag & drop image upload, gallery, usage-type tagging, and dependency-free cropp
 
 Author: [Umut Yaldız](https://github.com/umutyaldiz)
 
+### Demo
+
+**Upload → usage-type tagging → size presets → custom crop**, with `waitForSuccess: true` (live
+save/list round trip against a mocked backend):
+
+![Lumeo uploader and crop studio demo](.github/lumeo-uploader-cropstudio.gif)
+
+**Mini corner viewer** — embeddable widget with drag-and-drop export into an editor:
+
+![Lumeo mini viewer demo](.github/lumeo-miniviewer.gif)
+
 ---
 
 **Languages:** [English](#english) | [Türkçe](#türkçe) (scroll to the bottom)
