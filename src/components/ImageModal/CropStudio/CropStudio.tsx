@@ -1,51 +1,68 @@
-import { useEffect, useRef, useState } from "react";
-import { CropOverlay } from "./CropOverlay";
+import { useRef, useState } from "react";
+import { CropCanvas } from "./CropCanvas";
 import { AspectRatioPicker, type AspectPreset } from "./AspectRatioPicker";
+import { TypeCropSelector } from "./TypeCropSelector";
 import { CropRegionChips } from "./CropRegionChips";
 import { pickRegionColor } from "./colors";
-import { centeredRectForAspect, centeredRectForSize } from "../../../lib/geometry";
+import { centeredRectForAspect, centeredRectForSize, maxRectForAspect, roundRect, roundAspect } from "../../../lib/geometry";
 import type { Bounds } from "../../../lib/geometry";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
-import type { LumeoImage } from "../../../types";
+import type { LumeoImage, LumeoImageTypeOption } from "../../../types";
 import type { LumeoMessages } from "../../../lib/i18n";
 
 export interface CropStudioProps {
   image: LumeoImage;
-  /** Default aspect suggested by the currently selected usage type, used to seed the first region. */
+  /** Default aspect suggested by the currently selected usage type, used to seed the first region. Ignored when `imageTypes` is set. */
   defaultAspect?: number;
   regionsApi: UseCropRegionsResult;
   messages: LumeoMessages;
+  /**
+   * When set, replaces the aspect-ratio picker with usage-type buttons: selecting a type seeds
+   * a locked-aspect crop sized to the largest fit for that type's ratio, and re-selecting it
+   * removes that crop. No region is auto-seeded on image load in this mode.
+   */
+  imageTypes?: LumeoImageTypeOption[];
 }
 
-export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropStudioProps) {
+export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTypes }: CropStudioProps) {
   const imgRef = useRef<HTMLImageElement>(null);
-  const [displayBounds, setDisplayBounds] = useState<Bounds>({ width: 0, height: 0 });
   const [naturalSize, setNaturalSize] = useState<Bounds>({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const el = imgRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        setDisplayBounds({ width: entry.contentRect.width, height: entry.contentRect.height });
-      }
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const addRegion = (preset: AspectPreset) => {
     const naturalBounds = naturalSize.width > 0 ? naturalSize : { width: 1000, height: 1000 };
-    const rect =
+    const rect = roundRect(
       preset.width && preset.height
         ? centeredRectForSize(naturalBounds, preset.width, preset.height)
-        : centeredRectForAspect(naturalBounds, preset.aspect);
+        : centeredRectForAspect(naturalBounds, preset.aspect)
+    );
     regionsApi.addRegion({
       id: crypto.randomUUID(),
       name: messages.cropRegionName(regionsApi.regions.length + 1),
       aspectLabel: preset.label,
-      aspect: preset.aspect,
+      aspect: roundAspect(preset.aspect),
+      color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
+      ...rect,
+    });
+  };
+
+  const toggleTypeCrop = (option: LumeoImageTypeOption) => {
+    const existing = regionsApi.regions.find((region) => region.type === option.value);
+    if (existing) {
+      regionsApi.removeRegion(existing.id);
+      return;
+    }
+    const naturalBounds = naturalSize.width > 0 ? naturalSize : { width: 1000, height: 1000 };
+    const rect = roundRect(
+      option.aspect
+        ? maxRectForAspect(naturalBounds, option.aspect)
+        : { x: 0, y: 0, width: naturalBounds.width, height: naturalBounds.height }
+    );
+    regionsApi.addRegion({
+      id: crypto.randomUUID(),
+      name: option.label,
+      aspectLabel: option.label,
+      aspect: roundAspect(option.aspect),
+      type: option.value,
       color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
       ...rect,
     });
@@ -62,17 +79,18 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropS
           onLoad={(event) => {
             const target = event.currentTarget;
             setNaturalSize({ width: target.naturalWidth, height: target.naturalHeight });
-            setDisplayBounds({ width: target.clientWidth, height: target.clientHeight });
-            if (regionsApi.regions.length === 0) {
-              const rect = centeredRectForAspect(
-                { width: target.naturalWidth, height: target.naturalHeight },
-                defaultAspect
+            if (!imageTypes && regionsApi.regions.length === 0) {
+              const rect = roundRect(
+                centeredRectForAspect(
+                  { width: target.naturalWidth, height: target.naturalHeight },
+                  defaultAspect
+                )
               );
               regionsApi.addRegion({
                 id: crypto.randomUUID(),
                 name: messages.cropRegionName(1),
                 aspectLabel: defaultAspect ? messages.recommendedRatio : messages.free,
-                aspect: defaultAspect,
+                aspect: roundAspect(defaultAspect),
                 color: pickRegionColor([]),
                 ...rect,
               });
@@ -80,30 +98,32 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages }: CropS
           }}
           className="lumeo:box-border lumeo:block lumeo:max-h-[380px] lumeo:max-w-full lumeo:select-none lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain"
         />
-        {naturalSize.width > 0 &&
-          // Draw the active region last so it's always on top of overlapping inactive ones.
-          [...regionsApi.regions]
-            .sort((a) => (a.id === regionsApi.activeRegionId ? 1 : -1))
-            .map((region) => (
-              <CropOverlay
-                key={region.id}
-                region={region}
-                aspect={region.aspect}
-                isActive={region.id === regionsApi.activeRegionId}
-                color={region.color}
-                displayBounds={displayBounds}
-                naturalSize={naturalSize}
-                onChange={(rect) => regionsApi.updateRegion(region.id, rect)}
-              />
-            ))}
+        {naturalSize.width > 0 && (
+          <CropCanvas
+            regions={regionsApi.regions}
+            activeRegionId={regionsApi.activeRegionId}
+            naturalSize={naturalSize}
+            onChange={(id, rect) => regionsApi.updateRegion(id, rect)}
+          />
+        )}
       </div>
 
       <div className="lumeo:grid lumeo:grid-cols-1 lumeo:gap-3 lumeo:sm:grid-cols-2">
         <div>
           <p className="lumeo:mb-1 lumeo:text-xs lumeo:font-medium lumeo:uppercase lumeo:tracking-wide lumeo:text-zinc-500">
-            {messages.newCropRegion}
+            {imageTypes ? messages.usageType : messages.newCropRegion}
           </p>
-          <AspectRatioPicker onAdd={addRegion} messages={messages} />
+          {imageTypes ? (
+            <TypeCropSelector
+              options={imageTypes}
+              regions={regionsApi.regions}
+              imageUrl={image.url}
+              naturalSize={naturalSize}
+              onToggle={toggleTypeCrop}
+            />
+          ) : (
+            <AspectRatioPicker onAdd={addRegion} messages={messages} />
+          )}
         </div>
         <div>
           <p className="lumeo:mb-1 lumeo:text-xs lumeo:font-medium lumeo:uppercase lumeo:tracking-wide lumeo:text-zinc-500">

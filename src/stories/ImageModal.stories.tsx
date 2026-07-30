@@ -15,6 +15,8 @@ const image: LumeoImage = {
   uploadedAt: new Date().toISOString(),
   type: "manset",
   mimeType: "image/jpeg",
+  width: 2560,
+  height: 1760,
 };
 
 const config = {
@@ -24,6 +26,7 @@ const config = {
     save: "/api/mock/save",
     delete: "/api/mock/delete",
   },
+  clientId: "news-site-42",
 };
 
 const meta: Meta<typeof ImageModal> = {
@@ -95,6 +98,24 @@ export const NestedSizePreset: Story = {
       description: {
         story:
           "'Detay' tek bir seçilebilir kutu olarak görünür, ama altında 400×400, 500×200 ve 200×200 boyutları listelenir. Seçip kaydettiğinizde bu üç boyutun hepsi tek bir grup halinde API'ye gönderilir (`sizes: [{ id: 'detay', label: 'Detay', sizes: [...] }]`) — sunucu her birini ayrı ayrı kırpar.",
+      },
+    },
+  },
+};
+
+export const CropByUsageType: Story = {
+  name: "Kullanım tipine göre kırpma (tip seçince direkt kadraj)",
+  render: () => (
+    <LumeoProvider config={{ ...config, waitForSuccess: true }}>
+      <ImageModal image={image} onClose={() => {}} onRefetch={() => {}} cropByUsageType />
+    </LumeoProvider>
+  ),
+  parameters: {
+    msw: { handlers: slowHandlers },
+    docs: {
+      description: {
+        story:
+          "`cropByUsageType` açıkken ayrı bir 'Boyutlandır & Kırp' adımı yok — bir kullanım tipine (ör. Manşet, 16:9) tıklamak o oranda, en büyük haliyle bir kırpma alanını doğrudan ana görselin üzerinde açar; oran bozulamaz, sadece büyütülüp küçültülebilir ve taşınabilir. Tip butonu yeşile döner ve içine tik işareti eklenir. Aynı anda birden fazla tip seçip her birini ayrı ayrı kadrajlayabilirsiniz — hangisini düzenlediğinizi değiştirmek için 'Crop Regions' listesinden ilgili kayda tıklayın. Kaydedince her kırpma kendi `type` alanıyla birlikte `crops` altında API'ye gönderilir (tek bir genel `type` alanı gönderilmez). `waitForSuccess: true` olduğu için kayıt tamamlanana kadar üstte yükleme çubuğu görünür.",
       },
     },
   },

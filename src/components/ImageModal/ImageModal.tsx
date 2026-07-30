@@ -13,16 +13,27 @@ import { LoadingBar } from "../shared/LoadingBar";
 import { ConfirmDialog } from "../shared/ConfirmDialog";
 import { TypeSelector } from "./TypeSelector";
 import { CropTabs } from "./CropStudio/CropTabs";
+import { CropStudio } from "./CropStudio/CropStudio";
 import type { LumeoImage } from "../../types";
 
 export interface ImageModalProps {
   image: LumeoImage;
   onClose: () => void;
   onRefetch: () => void;
+  /**
+   * When true, usage-type selection directly drives cropping: selecting a type seeds a
+   * locked-aspect crop sized to the largest fit for that type's ratio (shown right away on the
+   * main image, no separate "Resize & Crop" step), and the type turns green/checked once
+   * cropped. Multiple types can be active at once, each with its own crop; saving sends them
+   * all as `crops` (each tagged with its `type`) instead of a single `type` field. The manual
+   * "Resize & Crop" toggle and its Size Options tab are hidden in this mode. Default: false
+   * (classic single usage-type tag + optional separate resize/crop flow).
+   */
+  cropByUsageType?: boolean;
 }
 
 /** Full-screen popup for per-image actions: delete, tag with a usage type, and resize/crop. */
-export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
+export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false }: ImageModalProps) {
   const config = useLumeoConfig();
   const messages = useMemo(() => getMessages(config.locale), [config.locale]);
   const dateLocale = useMemo(() => dateLocaleTag(config.locale), [config.locale]);
@@ -35,11 +46,13 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
     [config.sizePresets, config.locale]
   );
   const [selectedType, setSelectedType] = useState<string | undefined>(image.type);
-  const [cropEnabled, setCropEnabled] = useState(false);
+  // If this image already has saved crop regions (reopened after a previous save), jump straight
+  // into the crop tool instead of the plain tagging view so the user sees them immediately.
+  const [cropEnabled, setCropEnabled] = useState(Boolean(image.crops?.length));
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"save" | "delete" | null>(null);
-  const cropRegions = useCropRegions();
+  const cropRegions = useCropRegions(image.crops ?? []);
   const sizeSelection = useSizeSelections();
 
   const selectedTypeOption = imageTypes.find((option) => option.value === selectedType);
@@ -49,11 +62,15 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
     const selectedSizes = sizePresets.filter((preset) => sizeSelection.isSelected(preset.id));
     const payload = {
       id: image.id,
-      type: selectedType,
-      ...(cropEnabled && selectedSizes.length > 0
+      // In cropByUsageType mode, each crop already carries its own `type` — there's no single
+      // overall type to tag the image with.
+      ...(cropByUsageType ? {} : { type: selectedType }),
+      ...(!cropByUsageType && cropEnabled && selectedSizes.length > 0
         ? { sizes: selectedSizes.map((preset) => toSelectedSize(preset)) }
         : {}),
-      ...(cropEnabled && cropRegions.regions.length > 0 ? { crops: cropRegions.regions } : {}),
+      ...((cropByUsageType || cropEnabled) && cropRegions.regions.length > 0
+        ? { crops: cropRegions.regions }
+        : {}),
     };
     const actionPromise = saveImageMeta(config, payload);
     refreshOnce(config.waitForSuccess, actionPromise, onRefetch);
@@ -109,7 +126,9 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
 
           <div className="lumeo:flex lumeo:flex-1 lumeo:flex-col lumeo:gap-6 lumeo:overflow-y-auto lumeo:p-6 lumeo:md:flex-row">
             <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4">
-              {cropEnabled ? (
+              {cropByUsageType ? (
+                <CropStudio image={image} regionsApi={cropRegions} messages={messages} imageTypes={imageTypes} />
+              ) : cropEnabled ? (
                 <CropTabs
                   image={image}
                   sizePresets={sizePresets}
@@ -128,7 +147,7 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
             </div>
 
             <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72">
-              {!cropEnabled && (
+              {!cropByUsageType && !cropEnabled && (
                 <div>
                   <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>
                     <Tag size={12} /> {messages.usageType}
@@ -167,14 +186,16 @@ export function ImageModal({ image, onClose, onRefetch }: ImageModalProps) {
                 </dl>
               </div>
 
-              <button
-                type="button"
-                onClick={handleToggleCrop}
-                className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-2 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${outlineButton}`}
-              >
-                <SlidersHorizontal size={15} />
-                {cropEnabled ? messages.closeResizeAndCrop : messages.resizeAndCrop}
-              </button>
+              {!cropByUsageType && (
+                <button
+                  type="button"
+                  onClick={handleToggleCrop}
+                  className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-2 lumeo:px-3 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${outlineButton}`}
+                >
+                  <SlidersHorizontal size={15} />
+                  {cropEnabled ? messages.closeResizeAndCrop : messages.resizeAndCrop}
+                </button>
+              )}
 
               <div className="lumeo:mt-auto lumeo:flex lumeo:gap-2 lumeo:pt-2">
                 <button

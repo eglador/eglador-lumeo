@@ -27,6 +27,13 @@ export interface LumeoImage {
   /** Original pixel dimensions, as returned by the API after upload. */
   width?: number;
   height?: number;
+  /**
+   * Previously saved crop selections for this image, if any — symmetric with
+   * `SaveImagePayload.crops`: whatever was sent on save is expected back here on the next
+   * `list`/`upload` response, so reopening the image re-populates the crop tool with the same
+   * regions instead of starting from scratch.
+   */
+  crops?: CropRegion[];
 }
 
 export interface CropRegion {
@@ -37,6 +44,8 @@ export interface CropRegion {
   aspectLabel: string;
   /** Locked width/height ratio used while resizing. Undefined = free-form. */
   aspect?: number;
+  /** Usage-type value (`LumeoImageTypeOption.value`) this crop was seeded from, when created by selecting a usage type rather than a manual/custom aspect. Undefined for manual crops. */
+  type?: string;
   /** Hex color used to draw this region's outline and its list dot. Assigned once at creation. */
   color: string;
   /** All coordinates are in the original image's natural pixel space. */

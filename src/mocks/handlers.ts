@@ -73,10 +73,12 @@ function buildHandlers(writeDelayMs: number) {
       return HttpResponse.json({ success: true, images: newImages });
     }),
 
-    // Demo-only: a picked size preset or crop region produces a brand new derived
-    // mock image (one per size/crop) instead of overwriting the source — matching
-    // how a real backend would emit new resized/cropped output files. A plain
-    // type-only save (no size/crop) still updates the source image in place.
+    // Demo-only: a picked size preset still produces brand new derived mock images (one per
+    // box) — matching how a real backend would emit new resized output files for a fixed
+    // target size. Crops are different: they're metadata *about* the original image (a named
+    // framing for a usage type), not a separate file, so they're saved onto the source image's
+    // own `crops` field instead of spawning new rows — reopening the image later hands them
+    // right back so the crop tool can re-populate with the same regions.
     http.post("/api/mock/save", async ({ request }) => {
       if (writeDelayMs > 0) await delay(writeDelayMs);
       const body = (await request.json()) as SaveImagePayload;
@@ -84,20 +86,6 @@ function buildHandlers(writeDelayMs: number) {
 
       const derived: LumeoImage[] = [];
       if (source) {
-        body.crops?.forEach((crop, index) => {
-          const width = Math.round(crop.width);
-          const height = Math.round(crop.height);
-          derived.push({
-            ...source,
-            id: `img-${Date.now()}-crop-${index}`,
-            fileName: `${source.fileName} (${crop.name})`,
-            url: `https://picsum.photos/seed/${source.id}-crop-${index}/${width}/${height}`,
-            uploadedAt: new Date().toISOString(),
-            width,
-            height,
-            type: undefined,
-          });
-        });
         body.sizes?.forEach((selected, selectedIndex) => {
           selected.sizes.forEach((box, boxIndex) => {
             const width = Math.round(box.width);
@@ -116,10 +104,21 @@ function buildHandlers(writeDelayMs: number) {
         });
       }
 
-      mockImages =
-        derived.length > 0
-          ? [...derived, ...mockImages]
-          : mockImages.map((image) => (image.id === body.id ? { ...image, type: body.type } : image));
+      mockImages = [
+        ...derived,
+        ...mockImages.map((image) =>
+          image.id === body.id
+            ? {
+                ...image,
+                // `cropByUsageType` saves never send `type` at all (each crop carries its own) —
+                // only touch it when the payload actually included the field, so that mode
+                // doesn't silently wipe a type tagged earlier through the classic flow.
+                ...(body.type !== undefined ? { type: body.type } : {}),
+                ...(body.crops ? { crops: body.crops } : {}),
+              }
+            : image
+        ),
+      ];
 
       return HttpResponse.json({ success: true });
     }),

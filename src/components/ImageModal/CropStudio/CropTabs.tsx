@@ -25,7 +25,9 @@ type TabKey = "sizes" | "custom";
  * Both can be used together; each keeps its own state regardless of the active tab.
  */
 export function CropTabs({ image, sizePresets, sizeSelection, defaultAspect, regionsApi, messages }: CropTabsProps) {
-  const [tab, setTab] = useState<TabKey>("sizes");
+  // Jump straight to "Custom Crop" if this image already has saved regions (e.g. reopened after
+  // a previous save) so the user sees their existing crops immediately instead of the size tab.
+  const [tab, setTab] = useState<TabKey>(() => (regionsApi.regions.length > 0 ? "custom" : "sizes"));
 
   return (
     <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4">

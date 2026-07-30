@@ -17,10 +17,12 @@ import type { LumeoImage, LumeoViewMode } from "../../types";
 export interface LumeoUploaderProps {
   className?: string;
   defaultViewMode?: LumeoViewMode;
+  /** Forwarded to the `ImageModal` opened when an image is selected — see `ImageModalProps.cropByUsageType`. */
+  cropByUsageType?: boolean;
 }
 
 /** Full drag & drop upload + gallery + tagging/cropping experience. Must be rendered inside a <LumeoProvider>. */
-export function LumeoUploader({ className, defaultViewMode = "grid" }: LumeoUploaderProps) {
+export function LumeoUploader({ className, defaultViewMode = "grid", cropByUsageType = false }: LumeoUploaderProps) {
   const config = useLumeoConfig();
   const { images, loading, refetch } = useLumeoImages(config);
   const queue = useUploadQueue(config, refetch);
@@ -78,7 +80,12 @@ export function LumeoUploader({ className, defaultViewMode = "grid" }: LumeoUplo
         />
 
         {selectedImage && (
-          <ImageModal image={selectedImage} onClose={() => setSelectedImage(null)} onRefetch={refetch} />
+          <ImageModal
+            image={selectedImage}
+            onClose={() => setSelectedImage(null)}
+            onRefetch={refetch}
+            cropByUsageType={cropByUsageType}
+          />
         )}
       </div>
     </div>

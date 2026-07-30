@@ -1,4 +1,4 @@
-import type { LumeoImageTypeOption, LumeoLocale } from "../types";
+import type { LumeoImageTypeOption, LumeoLocale, LumeoImage } from "../types";
 import { resolveLocale } from "./i18n";
 
 export const DEFAULT_IMAGE_TYPES_EN: LumeoImageTypeOption[] = [
@@ -36,6 +36,16 @@ export function findImageTypeLabel(
 ): string | undefined {
   if (!value) return undefined;
   return options.find((option) => option.value === value)?.label;
+}
+
+/**
+ * Human readable labels for the crops already saved on an image — the usage type's label when a
+ * crop carries one (`cropByUsageType` flow), otherwise the crop's own name (manual/custom crops).
+ * Empty array when the image hasn't been cropped yet.
+ */
+export function resolveCropLabels(image: LumeoImage, imageTypes: LumeoImageTypeOption[]): string[] {
+  if (!image.crops || image.crops.length === 0) return [];
+  return image.crops.map((crop) => (crop.type ? (findImageTypeLabel(crop.type, imageTypes) ?? crop.type) : crop.name));
 }
 
 function gcd(a: number, b: number): number {

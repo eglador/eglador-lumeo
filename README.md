@@ -806,15 +806,24 @@ birleşimi).
 { "success": true }
 ```
 
-**Backend'iniz `sizes` / `crops` ile ne yapmalı:** buradaki her kutu, orijinal görselin
-değiştirilmesi değil, **yeni bir türetilmiş çıktı** talebidir. `crops` içindeki her eleman için, ve
-her `sizes[].sizes` içindeki her kutu için ilgili boyutlandırılmış/kırpılmış dosyayı üretin (o
-kutunun `width`/`height`'ını, ya da `crops[].x/y/width/height` bölgesini orijinalden kırparak) ve
-bunu **kendi** `LumeoImage` kaydı olarak saklayın — kendi `id`'si, kendi `url`'i ile. `sizes`'ın
-kendisini değil `sizes[].sizes`'ı gezin: düz bir preset'in dizisinde tek kutu vardır, ama "Detay"
-gibi gruplanmış bir preset'te birden fazla kutu vardır ve kullanıcı tek bir checkbox işaretlemiş
-olsa da hepsinin üretilmesi gerekir. Orijinal görsel kaydı dokunulmadan kalır (gönderildiyse sadece
-`type` alanı güncellenir). Paketin kendisi bu payload'ı gönderip hemen ardından `list`'i yeniden
+**Backend'iniz `sizes` / `crops` ile ne yapmalı:** ikisi kavramsal olarak farklıdır.
+
+- **`sizes`** her zaman **yeni bir türetilmiş çıktı** talebidir — orijinalin değiştirilmesi değil.
+  Her `sizes[].sizes` içindeki her kutu için ilgili boyutlandırılmış dosyayı üretin (o kutunun
+  `width`/`height`'ını kullanarak) ve bunu **kendi** `LumeoImage` kaydı olarak saklayın — kendi
+  `id`'si, kendi `url`'i ile. `sizes`'ın kendisini değil `sizes[].sizes`'ı gezin: düz bir preset'in
+  dizisinde tek kutu vardır, ama "Detay" gibi gruplanmış bir preset'te birden fazla kutu vardır ve
+  kullanıcı tek bir checkbox işaretlemiş olsa da hepsinin üretilmesi gerekir.
+- **`crops`** ise yeni bir dosya değil, **orijinal görselin kendi üzerindeki metadata'sıdır** —
+  "bu görsel şu kullanım tipi için şöyle kadrajlanmış" bilgisi. Yeni bir kayıt oluşturmayın; gönderilen
+  `crops` dizisini olduğu gibi o görselin kendi `crops` alanına yazıp saklayın (`type` alanı
+  gönderildiyse onu da güncelleyin). Bir sonraki `list`/`upload` yanıtında bu görseli **aynı
+  `crops` içeriğiyle** geri döndürün — paket, görsel tekrar açıldığında bu alanı okuyup kırpma
+  aracını kaldığı yerden (aynı bölgelerle) devam ettirir. Ayrıntılı örnek için aşağıdaki
+  "cropByUsageType için örnek uçtan uca akış" bölümüne bakın.
+
+Orijinal görsel kaydı `sizes` bakımından dokunulmadan kalır (gönderildiyse sadece `type` ve
+`crops` güncellenir). Paketin kendisi bu payload'ı gönderip hemen ardından `list`'i yeniden
 çekmekten fazlasını yapmaz — `sizes`/`crops` içeriğini bunun ötesinde hiç yorumlamaz, dolayısıyla bu
 davranış tamamen backend'inize kalmıştır.
 
@@ -907,6 +916,185 @@ sadece `config.clientId` tanımlıysa eklenir.)
 Her 4 endpoint için de paket sadece `response.ok` (HTTP durum kodu) kontrolü yapar; `success`
 alanı zorunlu değildir ama okunabilirlik için önerilir. Çalışan bir mock sunucu örneği için bkz.
 `src/mocks/handlers.ts`.
+
+### cropByUsageType için örnek uçtan uca akış
+
+Bu bölüm, `ImageModal`'ı `cropByUsageType` ile kullanırken (bkz. `ImageModal / CropByUsageType`
+Storybook örneği) backend'inizin göreceği tam istek/yanıt döngüsünü, gerçekçi Türkçe örnek veriyle
+ve her istekte sabit `clientId: "newsId1453"` ile gösterir — API'yi yazacak geliştirici ekibinize
+doğrudan verebileceğiniz bir referanstır. Kadraj (`crops`) burada ayrı bir dosya değil, görselin
+kendi üzerindeki bir alandır; görsel tekrar açıldığında aynı kadrajlar geri gelir, listede de her
+zaman tek bir satır olarak kalır.
+
+**1) Yükleme — `POST` `endpoints.upload`**
+
+```
+POST /api/images/upload
+Content-Type: multipart/form-data; boundary=...
+
+files: (binary) sahil-haberi.jpg
+clientId: newsId1453
+```
+
+Beklenen yanıt (henüz hiç kadraj yok):
+
+```json
+{
+  "success": true,
+  "images": [
+    {
+      "id": "gorsel_7a41",
+      "fileName": "sahil-haberi.jpg",
+      "url": "https://cdn.haberajansi.com/uploads/gorsel_7a41.jpg",
+      "uploadedAt": "2026-07-30T09:12:00.000Z",
+      "fileSize": 312000,
+      "mimeType": "image/jpeg",
+      "width": 2560,
+      "height": 1760
+    }
+  ]
+}
+```
+
+**2) Listeleme — `GET` `endpoints.list`**
+
+```
+GET /api/images?clientId=newsId1453
+```
+
+Henüz kimse kadraj yapmadığı için `crops` alanı yok:
+
+```json
+{
+  "images": [
+    {
+      "id": "gorsel_7a41",
+      "fileName": "sahil-haberi.jpg",
+      "url": "https://cdn.haberajansi.com/uploads/gorsel_7a41.jpg",
+      "uploadedAt": "2026-07-30T09:12:00.000Z",
+      "fileSize": 312000,
+      "mimeType": "image/jpeg",
+      "width": 2560,
+      "height": 1760
+    }
+  ]
+}
+```
+
+**3) Kaydetme — `POST` `endpoints.save`**
+
+Kullanıcı modalda "Manşet" (16:9) ve "Kapak" (4:3) kullanım tiplerine tıklayıp ikisini de
+kadrajladı, sonra Kaydet'e bastı. `cropByUsageType` modunda tekil bir `type` alanı gönderilmez —
+her kadraj kendi `type`'ını taşır:
+
+```json
+{
+  "id": "gorsel_7a41",
+  "clientId": "newsId1453",
+  "crops": [
+    {
+      "id": "b2f1e4a0-1c3d-4e5f-8a9b-0c1d2e3f4a5b",
+      "name": "Manşet",
+      "aspectLabel": "Manşet",
+      "aspect": 1.7777777777777777,
+      "type": "manset",
+      "color": "#ef4444",
+      "x": 0,
+      "y": 160,
+      "width": 2560,
+      "height": 1440
+    },
+    {
+      "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
+      "name": "Kapak",
+      "aspectLabel": "Kapak",
+      "aspect": 1.3333333333333333,
+      "type": "kapak",
+      "color": "#22c55e",
+      "x": 107,
+      "y": 0,
+      "width": 2347,
+      "height": 1760
+    }
+  ]
+}
+```
+
+Beklenen yanıt:
+
+```json
+{ "success": true }
+```
+
+Backend bu istekte **yeni bir `LumeoImage` kaydı oluşturmaz** — `gorsel_7a41` kaydını bulup
+`crops` alanına yukarıdaki diziyi olduğu gibi yazar (gerçek kırpılmış dosyaları isterseniz ayrıca
+kendi tarafınızda üretip saklayabilirsiniz; paket bunu bilmez, sadece bu payload'ı gönderip
+`list`'i yeniden çeker).
+
+**4) Listeleme (tekrar) — `GET` `endpoints.list`**
+
+Kaydetmeden hemen sonraki çağrıda **aynı tek görsel** artık dolu bir `crops` alanıyla döner — yeni
+bir satır eklenmez, liste hâlâ tek kayıt gösterir:
+
+```json
+{
+  "images": [
+    {
+      "id": "gorsel_7a41",
+      "fileName": "sahil-haberi.jpg",
+      "url": "https://cdn.haberajansi.com/uploads/gorsel_7a41.jpg",
+      "uploadedAt": "2026-07-30T09:12:00.000Z",
+      "fileSize": 312000,
+      "mimeType": "image/jpeg",
+      "width": 2560,
+      "height": 1760,
+      "crops": [
+        {
+          "id": "b2f1e4a0-1c3d-4e5f-8a9b-0c1d2e3f4a5b",
+          "name": "Manşet",
+          "aspectLabel": "Manşet",
+          "aspect": 1.7777777777777777,
+          "type": "manset",
+          "color": "#ef4444",
+          "x": 0,
+          "y": 160,
+          "width": 2560,
+          "height": 1440
+        },
+        {
+          "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
+          "name": "Kapak",
+          "aspectLabel": "Kapak",
+          "aspect": 1.3333333333333333,
+          "type": "kapak",
+          "color": "#22c55e",
+          "x": 107,
+          "y": 0,
+          "width": 2347,
+          "height": 1760
+        }
+      ]
+    }
+  ]
+}
+```
+
+Paket bu görseli tekrar açtığınızda `crops` alanını okuyup kırpma aracını bu iki bölgeyle (Manşet
+ve Kapak, ikisi de yeşil/tikli) hazır halde açar — kullanıcı sıfırdan kadrajlamaya gerek duymaz.
+
+**5) Silme — `DELETE` `endpoints.delete`**
+
+İstek:
+
+```json
+{ "id": "gorsel_7a41", "clientId": "newsId1453" }
+```
+
+Beklenen yanıt:
+
+```json
+{ "success": true }
+```
 
 ### Next.js yardımcı hook'u
 

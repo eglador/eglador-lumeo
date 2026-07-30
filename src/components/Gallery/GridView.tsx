@@ -1,5 +1,7 @@
+import { Crop } from "lucide-react";
 import type { LumeoImage, LumeoImageTypeOption } from "../../types";
 import { TypeBadge } from "./TypeBadge";
+import { resolveCropLabels } from "../../lib/imageTypes";
 import { tagOutline } from "../../styles/editorial";
 
 export interface GridViewProps {
@@ -25,11 +27,14 @@ export function GridView({ images, imageTypes, onSelectImage }: GridViewProps) {
           />
           <div className="lumeo:absolute lumeo:bottom-1.5 lumeo:left-1.5 lumeo:flex lumeo:flex-wrap lumeo:gap-1">
             {image.type && <TypeBadge type={image.type} imageTypes={imageTypes} />}
-            {image.width && image.height && (
-              <span className={`${tagOutline} lumeo:bg-white/90`}>
-                {image.width}×{image.height}
+            {resolveCropLabels(image, imageTypes).map((label, index) => (
+              <span
+                key={`${label}-${index}`}
+                className={`${tagOutline} lumeo:flex lumeo:items-center lumeo:gap-0.5 lumeo:bg-white/90`}
+              >
+                <Crop size={9} /> {label}
               </span>
-            )}
+            ))}
           </div>
         </button>
       ))}
