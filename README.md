@@ -165,7 +165,8 @@ interface LumeoImage {
 ##### 1) `endpoints.upload` — `POST`
 
 One or more files are sent in a **single request** as `multipart/form-data`. Every file is
-appended under the same `files` field name.
+appended under the same `files[]` field name (the trailing `[]` is the standard multipart array
+convention — some backends, notably PHP, only see the last entry without it).
 
 **Request (multipart/form-data):**
 
@@ -173,8 +174,8 @@ appended under the same `files` field name.
 POST /api/images/upload
 Content-Type: multipart/form-data; boundary=...
 
-files: (binary) headline-image.jpg
-files: (binary) cover-photo.png
+files[]: (binary) headline-image.jpg
+files[]: (binary) cover-photo.png
 clientId: news-site-42        (if config.clientId is set)
 ```
 
@@ -675,7 +676,8 @@ interface LumeoImage {
 ##### 1) `endpoints.upload` — `POST`
 
 Bir veya birden fazla dosya, `multipart/form-data` ile **tek istekte** gönderilir. Her dosya aynı
-`files` alan adıyla eklenir.
+`files[]` alan adıyla eklenir (sondaki `[]`, standart multipart dizi kuralıdır — bazı backend'ler,
+özellikle PHP, bu olmadan sadece son gönderilen dosyayı görür).
 
 **İstek (multipart/form-data):**
 
@@ -683,8 +685,8 @@ Bir veya birden fazla dosya, `multipart/form-data` ile **tek istekte** gönderil
 POST /api/images/upload
 Content-Type: multipart/form-data; boundary=...
 
-files: (binary) manset-gorseli.jpg
-files: (binary) kapak-foto.png
+files[]: (binary) manset-gorseli.jpg
+files[]: (binary) kapak-foto.png
 clientId: news-site-42        (config.clientId tanımlıysa)
 ```
 
@@ -974,7 +976,7 @@ zaman tek bir satır olarak kalır.
 POST /api/images/upload
 Content-Type: multipart/form-data; boundary=...
 
-files: (binary) sahil-haberi.jpg
+files[]: (binary) sahil-haberi.jpg
 clientId: newsId1453
 ```
 

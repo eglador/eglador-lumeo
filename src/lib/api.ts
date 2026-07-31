@@ -18,7 +18,10 @@ export async function fetchImageList(config: LumeoConfig, signal?: AbortSignal):
 
 export function uploadImages(config: LumeoConfig, files: File[]): Promise<Response> {
   const formData = new FormData();
-  files.forEach((file) => formData.append("files", file));
+  // "files[]" (not "files") so PHP-style backends parse repeated entries as an actual array
+  // instead of silently keeping only the last one — the standard multipart/form-data array
+  // convention, harmless for backends that don't require the brackets either.
+  files.forEach((file) => formData.append("files[]", file));
   if (config.clientId) formData.append("clientId", config.clientId);
   return fetch(config.endpoints.upload, { method: "POST", body: formData });
 }

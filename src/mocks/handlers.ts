@@ -58,7 +58,7 @@ function buildHandlers(writeDelayMs: number) {
     http.post("/api/mock/upload", async ({ request }) => {
       if (writeDelayMs > 0) await delay(writeDelayMs);
       const formData = await request.formData();
-      const files = formData.getAll("files") as File[];
+      const files = formData.getAll("files[]") as File[];
       const newImages: LumeoImage[] = files.map((file, index) => ({
         id: `img-${Date.now()}-${index}`,
         fileName: file.name,
