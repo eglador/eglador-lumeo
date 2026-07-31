@@ -78,8 +78,8 @@ skipped entirely:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Hero Image", aspect: 21 / 9, width: 2560, height: 1097 },
-    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512 },
+    { value: "hero", label: "Hero Image", aspect: 21 / 9, width: 2560, height: 1097, typeId: 101 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, typeId: 102 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -91,6 +91,10 @@ const config: LumeoConfig = {
 `imageTypes[].width`/`height` are optional and independent of `aspect` — when set, they're shown
 next to the type's label in the usage-type selector (e.g. `21:9 · 2560×1097`) purely as a hint for
 the editor; they don't change how the crop tool behaves (that's still driven by `aspect` alone).
+`typeId` is an optional opaque identifier (e.g. a backend/database id) distinct from the slug-like
+`value` — when set, it's carried onto any `cropByUsageType` crop created for that type as
+`CropRegion.typeId`, alongside a derived `CropRegion.aspectRatio` ("WxH" slug, e.g. `"21x9"`) —
+see "cropByUsageType için örnek uçtan uca akış" below for the full shape this produces.
 
 If omitted, `imageTypes` and `sizePresets` fall back to a locale-aware built-in default set
 (English by default, Turkish when `locale: "tr"`).
@@ -311,7 +315,8 @@ the original image's natural pixel space, `x`/`y` from the top-left corner:
       "id": "c1a2b3c4-...",
       "name": "Crop 1",
       "aspectLabel": "16:9",
-      "aspect": 1.7777777777777777,
+      "aspect": 1.7778,
+      "aspectRatio": "16x9",
       "x": 120,
       "y": 340,
       "width": 1024,
@@ -485,6 +490,37 @@ published with the package — copy it into your app) and is wired up end-to-end
 `LumeoMiniViewer / EmbeddedWithLexicalEditor` Storybook story, which drags a thumbnail into a
 real `LexicalComposer` editor and drops in the configured pattern.
 
+#### Keeping it mounted across tabs/navigation
+
+`LumeoMiniViewer` only stays visible while it's actually mounted — `position="fixed"` pins it to
+the viewport, but that's moot if your own app's tab/route switching unmounts the part of the tree
+it lives in. If you render it inside one tab of a larger app (e.g. a "Media" tab) and it
+disappears when you switch to another tab, render it **outside** the tab-switching logic instead
+— at the layout level that wraps every tab — so it stays mounted no matter which tab is active:
+
+```tsx
+function AppLayout() {
+  return (
+    <LumeoProvider config={config}>
+      <Tabs>
+        <TabPanel name="media"><MediaTab /></TabPanel>
+        <TabPanel name="other"><OtherTab /></TabPanel>
+      </Tabs>
+
+      {/* Outside the tab switch — stays mounted regardless of which tab is active. */}
+      <LumeoMiniViewer corner="bottom-right" defaultCollapsed onImageClick={(image) => /* ... */ null} />
+    </LumeoProvider>
+  );
+}
+```
+
+If you already do this and it still disappears, check whether your tab-transition library
+(Framer Motion, `react-transition-group`, etc.) applies `transform`/`filter`/`will-change` to an
+ancestor of the widget — any of those create a new containing block for `position: fixed`
+descendants, so the widget ends up positioned relative to that ancestor instead of the viewport
+and disappears when the ancestor animates out or is hidden. Move the widget outside that
+transformed ancestor (e.g. via a portal) if so.
+
 ### Development
 
 ```bash
@@ -551,8 +587,8 @@ hazır varsayılanlar tamamen devre dışı kalır:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Ana Görsel", aspect: 21 / 9, width: 2560, height: 1097 },
-    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512 },
+    { value: "hero", label: "Ana Görsel", aspect: 21 / 9, width: 2560, height: 1097, typeId: 101 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, typeId: 102 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -564,6 +600,11 @@ const config: LumeoConfig = {
 `imageTypes[].width`/`height` opsiyoneldir ve `aspect`'ten bağımsız çalışır — verildiğinde,
 kullanım tipi seçicisinde etiketin yanında (ör. `21:9 · 2560×1097`) editöre yardımcı bir bilgi
 olarak gösterilir; kırpma aracının davranışını değiştirmez (o hâlâ sadece `aspect`'e bağlıdır).
+`typeId`, slug niteliğindeki `value`'dan ayrı, opsiyonel bir tanımlayıcıdır (ör. backend/veritabanı
+id'si) — verildiğinde, o tip için `cropByUsageType` ile oluşturulan her kadrajın üzerine
+`CropRegion.typeId` olarak taşınır; ayrıca her kadrajda otomatik olarak bir `CropRegion.aspectRatio`
+("WxH" formatında, ör. `"21x9"`) da bulunur — tam şeklini aşağıdaki "cropByUsageType için örnek
+uçtan uca akış" bölümünde görebilirsiniz.
 
 `imageTypes` ve `sizePresets` verilmezse, dile göre (locale) değişen hazır bir varsayılan sete
 düşer (varsayılan olarak İngilizce, `locale: "tr"` verildiğinde Türkçe).
@@ -784,7 +825,8 @@ piksel boyutuna göredir, `x`/`y` sol-üst köşeden itibaren:
       "id": "c1a2b3c4-...",
       "name": "Kırpma 1",
       "aspectLabel": "16:9",
-      "aspect": 1.7777777777777777,
+      "aspect": 1.7778,
+      "aspectRatio": "16x9",
       "x": 120,
       "y": 340,
       "width": 1024,
@@ -996,8 +1038,10 @@ her kadraj kendi `type`'ını taşır:
       "id": "b2f1e4a0-1c3d-4e5f-8a9b-0c1d2e3f4a5b",
       "name": "Manşet",
       "aspectLabel": "Manşet",
-      "aspect": 1.7777777777777777,
+      "aspect": 1.7778,
+      "aspectRatio": "16x9",
       "type": "manset",
+      "typeId": 1,
       "color": "#ef4444",
       "x": 0,
       "y": 160,
@@ -1008,8 +1052,10 @@ her kadraj kendi `type`'ını taşır:
       "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
       "name": "Kapak",
       "aspectLabel": "Kapak",
-      "aspect": 1.3333333333333333,
+      "aspect": 1.3333,
+      "aspectRatio": "4x3",
       "type": "kapak",
+      "typeId": 2,
       "color": "#22c55e",
       "x": 107,
       "y": 0,
@@ -1149,6 +1195,38 @@ plugin kaydedin. Kopyalayıp kullanabileceğiniz referans implementasyon
 (pakete dahil değildir — kendi uygulamanıza kopyalayın) ve `LumeoMiniViewer /
 EmbeddedWithLexicalEditor` Storybook örneğinde uçtan uca bağlanmış halde bulunuyor; bu örnek bir
 küçük resmi gerçek bir `LexicalComposer` editörüne sürükleyip yapılandırılmış pattern'i bırakıyor.
+
+#### Sekmeler/navigasyon arasında mount kalması
+
+`LumeoMiniViewer` sadece gerçekten mount kaldığı sürece görünür kalır — `position="fixed"` onu
+viewport'a sabitler, ama kendi uygulamanızın sekme/route geçişi onun bulunduğu ağacı unmount
+ediyorsa bu hiç işe yaramaz. Widget'ı büyük bir uygulamanın tek bir sekmesinin (ör. "Medya"
+sekmesi) içinde render ediyorsanız ve başka bir sekmeye geçince kayboluyorsa, onu sekme geçiş
+mantığının **dışına** — tüm sekmeleri saran layout seviyesine — taşıyın; böylece hangi sekme aktif
+olursa olsun mount kalır:
+
+```tsx
+function AppLayout() {
+  return (
+    <LumeoProvider config={config}>
+      <Tabs>
+        <TabPanel name="medya"><MedyaSekmesi /></TabPanel>
+        <TabPanel name="diger"><DigerSekme /></TabPanel>
+      </Tabs>
+
+      {/* Sekme geçiş mantığının dışında — hangi sekme aktif olursa olsun mount kalır. */}
+      <LumeoMiniViewer corner="bottom-right" defaultCollapsed onImageClick={(image) => /* ... */ null} />
+    </LumeoProvider>
+  );
+}
+```
+
+Bunu zaten yapıyorsanız ve hâlâ kayboluyorsa, sekme geçiş animasyon kütüphanenizin (Framer Motion,
+`react-transition-group` vb.) widget'ın bir üst elementine `transform`/`filter`/`will-change`
+uygulayıp uygulamadığını kontrol edin — bunların herhangi biri `position: fixed` alt elemanları
+için yeni bir "containing block" oluşturur, yani widget artık viewport'a değil o elemana göre
+konumlanır ve o eleman animasyonla kaybolunca/gizlenince widget da onunla beraber kaybolur. Öyleyse
+widget'ı o transform uygulanan elemanın da dışına (ör. bir portal ile) taşıyın.
 
 ### Geliştirme
 

@@ -12,6 +12,11 @@ export interface LumeoImageTypeOption {
   width?: number;
   /** Preferred output height in pixels for this usage type. Shown next to the label; independent of `aspect`. */
   height?: number;
+  /**
+   * Optional backend identifier for this usage type (e.g. a database id), distinct from the
+   * slug-like `value`. Carried onto any crop created for this type as `CropRegion.typeId`.
+   */
+  typeId?: string | number;
 }
 
 export interface LumeoImage {
@@ -44,8 +49,12 @@ export interface CropRegion {
   aspectLabel: string;
   /** Locked width/height ratio used while resizing. Undefined = free-form. */
   aspect?: number;
+  /** `aspect` formatted as a "WxH" ratio slug, e.g. "16x9" or "1x1". Undefined for free-form crops. */
+  aspectRatio?: string;
   /** Usage-type value (`LumeoImageTypeOption.value`) this crop was seeded from, when created by selecting a usage type rather than a manual/custom aspect. Undefined for manual crops. */
   type?: string;
+  /** `LumeoImageTypeOption.typeId` for the usage type this crop was seeded from, if one was configured. Undefined for manual crops or types without a `typeId`. */
+  typeId?: string | number;
   /** Hex color used to draw this region's outline and its list dot. Assigned once at creation. */
   color: string;
   /** All coordinates are in the original image's natural pixel space. */

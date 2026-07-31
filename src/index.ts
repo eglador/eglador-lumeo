@@ -22,6 +22,7 @@ export {
   resolveImageTypes,
   findImageTypeLabel,
   formatImageTypeMeta,
+  formatAspectRatioSlug,
 } from "./lib/imageTypes";
 export {
   DEFAULT_SIZE_PRESETS,

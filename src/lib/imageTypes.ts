@@ -2,21 +2,21 @@ import type { LumeoImageTypeOption, LumeoLocale, LumeoImage } from "../types";
 import { resolveLocale } from "./i18n";
 
 export const DEFAULT_IMAGE_TYPES_EN: LumeoImageTypeOption[] = [
-  { value: "manset", label: "Headline", aspect: 16 / 9, width: 1920, height: 1080 },
-  { value: "kapak", label: "Cover", aspect: 4 / 3, width: 1200, height: 900 },
-  { value: "banner", label: "Banner", aspect: 21 / 9, width: 2100, height: 900 },
-  { value: "schema", label: "Schema", aspect: 1, width: 1080, height: 1080 },
-  { value: "thumbnail", label: "Thumbnail", aspect: 1, width: 300, height: 300 },
-  { value: "galeri", label: "Gallery" },
+  { value: "manset", label: "Headline", aspect: 16 / 9, width: 1920, height: 1080, typeId: 1 },
+  { value: "kapak", label: "Cover", aspect: 4 / 3, width: 1200, height: 900, typeId: 2 },
+  { value: "banner", label: "Banner", aspect: 21 / 9, width: 2100, height: 900, typeId: 3 },
+  { value: "schema", label: "Schema", aspect: 1, width: 1080, height: 1080, typeId: 4 },
+  { value: "thumbnail", label: "Thumbnail", aspect: 1, width: 300, height: 300, typeId: 5 },
+  { value: "galeri", label: "Gallery", typeId: 6 },
 ];
 
 export const DEFAULT_IMAGE_TYPES_TR: LumeoImageTypeOption[] = [
-  { value: "manset", label: "Manşet", aspect: 16 / 9, width: 1920, height: 1080 },
-  { value: "kapak", label: "Kapak", aspect: 4 / 3, width: 1200, height: 900 },
-  { value: "banner", label: "Banner", aspect: 21 / 9, width: 2100, height: 900 },
-  { value: "schema", label: "Schema", aspect: 1, width: 1080, height: 1080 },
-  { value: "thumbnail", label: "Küçük Görsel", aspect: 1, width: 300, height: 300 },
-  { value: "galeri", label: "Galeri Görseli" },
+  { value: "manset", label: "Manşet", aspect: 16 / 9, width: 1920, height: 1080, typeId: 1 },
+  { value: "kapak", label: "Kapak", aspect: 4 / 3, width: 1200, height: 900, typeId: 2 },
+  { value: "banner", label: "Banner", aspect: 21 / 9, width: 2100, height: 900, typeId: 3 },
+  { value: "schema", label: "Schema", aspect: 1, width: 1080, height: 1080, typeId: 4 },
+  { value: "thumbnail", label: "Küçük Görsel", aspect: 1, width: 300, height: 300, typeId: 5 },
+  { value: "galeri", label: "Galeri Görseli", typeId: 6 },
 ];
 
 /** English default image-usage types. Use `DEFAULT_IMAGE_TYPES_TR` for the Turkish set. */
@@ -58,8 +58,8 @@ function ratioLabelFromDimensions(width: number, height: number): string {
   return `${width / divisor}:${height / divisor}`;
 }
 
-/** Approximates a decimal aspect ratio as the closest small-integer fraction, e.g. 1.777... -> "16:9". */
-function ratioLabelFromAspect(aspect: number): string {
+/** Approximates a decimal aspect ratio as the closest small-integer fraction, e.g. 1.777... -> {num: 16, den: 9}. */
+function simplifyAspectToFraction(aspect: number): { num: number; den: number } {
   let best = { num: 1, den: 1, error: Infinity };
   for (let den = 1; den <= 32; den++) {
     const num = Math.round(aspect * den);
@@ -68,7 +68,19 @@ function ratioLabelFromAspect(aspect: number): string {
     if (error < best.error - 1e-9) best = { num, den, error };
   }
   const divisor = gcd(best.num, best.den) || 1;
-  return `${best.num / divisor}:${best.den / divisor}`;
+  return { num: best.num / divisor, den: best.den / divisor };
+}
+
+/** Approximates a decimal aspect ratio as the closest small-integer fraction, e.g. 1.777... -> "16:9". */
+function ratioLabelFromAspect(aspect: number): string {
+  const { num, den } = simplifyAspectToFraction(aspect);
+  return `${num}:${den}`;
+}
+
+/** Same reduction as `ratioLabelFromAspect`, formatted as a "WxH" slug, e.g. 1.777... -> "16x9". Used on `CropRegion.aspectRatio`. */
+export function formatAspectRatioSlug(aspect: number): string {
+  const { num, den } = simplifyAspectToFraction(aspect);
+  return `${num}x${den}`;
 }
 
 /**

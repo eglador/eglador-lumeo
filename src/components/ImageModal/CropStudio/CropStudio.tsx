@@ -5,6 +5,7 @@ import { TypeCropSelector } from "./TypeCropSelector";
 import { CropRegionChips } from "./CropRegionChips";
 import { pickRegionColor } from "./colors";
 import { centeredRectForAspect, centeredRectForSize, maxRectForAspect, roundRect, roundAspect } from "../../../lib/geometry";
+import { formatAspectRatioSlug } from "../../../lib/imageTypes";
 import type { Bounds } from "../../../lib/geometry";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
 import type { LumeoImage, LumeoImageTypeOption } from "../../../types";
@@ -40,6 +41,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
       name: messages.cropRegionName(regionsApi.regions.length + 1),
       aspectLabel: preset.label,
       aspect: roundAspect(preset.aspect),
+      aspectRatio: preset.aspect ? formatAspectRatioSlug(preset.aspect) : undefined,
       color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
       ...rect,
     });
@@ -62,7 +64,9 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
       name: option.label,
       aspectLabel: option.label,
       aspect: roundAspect(option.aspect),
+      aspectRatio: option.aspect ? formatAspectRatioSlug(option.aspect) : undefined,
       type: option.value,
+      typeId: option.typeId,
       color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
       ...rect,
     });
@@ -91,6 +95,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
                 name: messages.cropRegionName(1),
                 aspectLabel: defaultAspect ? messages.recommendedRatio : messages.free,
                 aspect: roundAspect(defaultAspect),
+                aspectRatio: defaultAspect ? formatAspectRatioSlug(defaultAspect) : undefined,
                 color: pickRegionColor([]),
                 ...rect,
               });
