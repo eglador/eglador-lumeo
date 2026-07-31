@@ -157,6 +157,13 @@ export interface LumeoConfig {
    * reads or interprets this value — it only forwards it.
    */
   siteId?: LumeoTypeValue;
+  /**
+   * Extra headers sent on every request (list/upload/save/delete) — e.g. an `Authorization`
+   * bearer token for projects that require auth. Either a static object, or a function (sync or
+   * async) called fresh before each request, so a token read from storage is always current
+   * rather than captured once at config-creation time.
+   */
+  headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
 }
 
 export type RejectReason = "type" | "size" | "max-files";

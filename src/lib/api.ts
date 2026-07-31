@@ -23,9 +23,15 @@ function idFields(config: LumeoConfig): { clientId?: LumeoTypeValue; siteId?: Lu
   };
 }
 
+/** Resolves `config.headers` (static object, sync function, or async function) into a plain header map — e.g. an `Authorization` bearer token read fresh on every request. */
+async function resolveHeaders(config: LumeoConfig): Promise<Record<string, string>> {
+  if (!config.headers) return {};
+  return typeof config.headers === "function" ? await config.headers() : config.headers;
+}
+
 export async function fetchImageList(config: LumeoConfig, signal?: AbortSignal): Promise<LumeoImage[]> {
   const url = withIdQuery(config.endpoints.list, config);
-  const res = await fetch(url, { signal });
+  const res = await fetch(url, { signal, headers: await resolveHeaders(config) });
   if (!res.ok) {
     throw new Error(`Failed to fetch image list (${res.status})`);
   }
@@ -33,7 +39,7 @@ export async function fetchImageList(config: LumeoConfig, signal?: AbortSignal):
   return Array.isArray(data) ? data : (data?.images ?? []);
 }
 
-export function uploadImages(config: LumeoConfig, files: File[]): Promise<Response> {
+export async function uploadImages(config: LumeoConfig, files: File[]): Promise<Response> {
   const formData = new FormData();
   // "files[]" (not "files") so PHP-style backends parse repeated entries as an actual array
   // instead of silently keeping only the last one — the standard multipart/form-data array
@@ -41,21 +47,21 @@ export function uploadImages(config: LumeoConfig, files: File[]): Promise<Respon
   files.forEach((file) => formData.append("files[]", file));
   if (config.clientId !== undefined) formData.append("clientId", String(config.clientId));
   if (config.siteId !== undefined) formData.append("siteId", String(config.siteId));
-  return fetch(config.endpoints.upload, { method: "POST", body: formData });
+  return fetch(config.endpoints.upload, { method: "POST", body: formData, headers: await resolveHeaders(config) });
 }
 
-export function saveImageMeta(config: LumeoConfig, payload: SaveImagePayload): Promise<Response> {
+export async function saveImageMeta(config: LumeoConfig, payload: SaveImagePayload): Promise<Response> {
   return fetch(config.endpoints.save, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await resolveHeaders(config)) },
     body: JSON.stringify({ ...payload, ...idFields(config) }),
   });
 }
 
-export function deleteImage(config: LumeoConfig, id: string): Promise<Response> {
+export async function deleteImage(config: LumeoConfig, id: string): Promise<Response> {
   return fetch(config.endpoints.delete, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await resolveHeaders(config)) },
     body: JSON.stringify({ id, ...idFields(config) }),
   });
 }

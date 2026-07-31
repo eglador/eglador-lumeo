@@ -69,6 +69,29 @@ export function MediaLibrary() {
 }
 ```
 
+### Authentication headers
+
+For projects behind auth, `config.headers` adds extra headers to **every** request (list, upload,
+save, delete) — a static object, or a function (sync or async) called fresh right before each
+request, so a token read from storage is always current instead of captured once when the config
+object was created:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  headers: () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
+  },
+};
+```
+
+`config.headers` can also just be a plain `Record<string, string>` if the value never changes at
+runtime. Either way, the resolved headers are merged into every request — on `save`/`delete` they
+sit alongside the package's own `"Content-Type": "application/json"`.
+
 ### Customizing usage types and size presets
 
 Both the "usage type" list (headline/cover/banner/...) and the size-preset list shown in the crop
@@ -172,6 +195,9 @@ interprets them, only forwards them:
 - `upload`: added as `clientId`/`siteId` fields in the `multipart/form-data`
 - `list`: added as `?clientId=...&siteId=...` query parameters
 - `save` / `delete`: added as `clientId`/`siteId` fields in the JSON body
+
+If `config.headers` is set, its resolved headers (see "Authentication headers" above) are merged
+into all 4 requests too — most commonly an `Authorization` bearer token.
 
 #### `LumeoImage` (shared data model across every endpoint)
 
@@ -609,6 +635,29 @@ export function MediaLibrary() {
 }
 ```
 
+### Kimlik doğrulama header'ları
+
+Auth gerektiren projeler için `config.headers`, **her** isteğe (list, upload, save, delete) ekstra
+header ekler — sabit bir obje olabilir, ya da (senkron veya async) bir fonksiyon olabilir; bu
+fonksiyon her istekten hemen önce tekrar çağrılır, böylece storage'dan okunan bir token config
+oluşturulduğu anda değil, her seferinde güncel haliyle gönderilir:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  headers: () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
+  },
+};
+```
+
+`config.headers`, çalışma zamanında hiç değişmeyecekse düz bir `Record<string, string>` da
+olabilir. Her iki durumda da çözümlenen header'lar her isteğe eklenir — `save`/`delete`'te
+paketin kendi `"Content-Type": "application/json"` header'ıyla birlikte gönderilir.
+
 ### Kullanım tipi ve boyut seçeneklerini özelleştirme
 
 Hem "kullanım tipi" listesi (manşet/kapak/banner/...) hem de kırpma modalinde gösterilen boyut
@@ -715,6 +764,9 @@ değerleri hiç yorumlamaz, sadece taşır:
 - `upload`: `multipart/form-data` içine `clientId`/`siteId` alanları olarak eklenir
 - `list`: URL'ye `?clientId=...&siteId=...` query parametreleri olarak eklenir
 - `save` / `delete`: JSON gövdesine `clientId`/`siteId` alanları olarak eklenir
+
+`config.headers` verilirse (bkz. yukarıdaki "Kimlik doğrulama header'ları"), çözümlenen header'lar
+bu 4 isteğin hepsine de eklenir — en yaygın kullanımı bir `Authorization` bearer token'ıdır.
 
 #### `LumeoImage` (tüm endpoint'lerde ortak veri modeli)
 
