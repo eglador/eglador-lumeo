@@ -204,11 +204,21 @@ export function LumeoMiniViewer({
             className={inputBase}
           >
             <option value="all">{messages.all}</option>
-            {imageTypes.map((option) => (
-              <option key={imageTypeKey(option)} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            {imageTypes.map((option) =>
+              option.crops && option.crops.length > 0 ? (
+                <optgroup key={imageTypeKey(option)} label={option.name ?? option.label}>
+                  {option.crops.map((child) => (
+                    <option key={imageTypeKey(child)} value={child.value}>
+                      {child.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : (
+                <option key={imageTypeKey(option)} value={option.value}>
+                  {option.label}
+                </option>
+              )
+            )}
           </select>
 
           <div className="lumeo:grid lumeo:max-h-64 lumeo:grid-cols-3 lumeo:gap-1.5 lumeo:overflow-y-auto">
@@ -222,7 +232,8 @@ export function LumeoMiniViewer({
               </p>
             ) : (
               images.map((image) => {
-                const typeLabel = image.type ? (findImageTypeLabel(image.type, imageTypes) ?? image.type) : undefined;
+                const typeLabel =
+                  image.type !== undefined ? (findImageTypeLabel(image.type, imageTypes) ?? String(image.type)) : undefined;
                 return (
                   <button
                     key={image.id}

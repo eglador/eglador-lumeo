@@ -52,9 +52,10 @@ const config: LumeoConfig = {
   waitForSuccess: false,
   maxFileSizeMB: 10,
   accept: ["image/*"],
-  // Opaque, consumer-supplied id (site/tenant/project id, etc.) — the
-  // package never interprets it, it's just forwarded on every request.
+  // Opaque, consumer-supplied ids (site/tenant/project id, etc.) — string or number,
+  // the package never interprets them, they're just forwarded on every request.
   clientId: "news-site-42",
+  siteId: 42,
   // UI language for every built-in string. Default: "en". Set "tr" for Turkish.
   locale: "en",
 };
@@ -78,8 +79,8 @@ skipped entirely:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Hero Image", aspect: 21 / 9, width: 2560, height: 1097, typeId: 101 },
-    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, typeId: 102 },
+    { value: "hero", label: "Hero Image", aspect: 21 / 9, width: 2560, height: 1097, cropTypeId: 101 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, cropTypeId: 102 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -91,10 +92,37 @@ const config: LumeoConfig = {
 `imageTypes[].width`/`height` are optional and independent of `aspect` — when set, they're shown
 next to the type's label in the usage-type selector (e.g. `21:9 · 2560×1097`) purely as a hint for
 the editor; they don't change how the crop tool behaves (that's still driven by `aspect` alone).
-`typeId` is an optional opaque identifier (e.g. a backend/database id) distinct from the slug-like
-`value` — when set, it's carried onto any `cropByUsageType` crop created for that type as
-`CropRegion.typeId`, alongside a derived `CropRegion.aspectRatio` ("WxH" slug, e.g. `"21x9"`) —
+`cropTypeId` is an optional opaque identifier (e.g. a backend/database id) distinct from the
+slug-like `value` — when set, it's carried onto any `cropByUsageType` crop created for that type as
+`CropRegion.cropTypeId`, alongside a derived `CropRegion.aspectRatio` ("WxH" slug, e.g. `"21x9"`) —
 see "cropByUsageType için örnek uçtan uca akış" below for the full shape this produces.
+
+#### Grouping usage types
+
+Any `imageTypes` entry can nest other entries under it purely for display grouping — give it
+`crops` (the same `LumeoImageTypeOption` shape, non-nested) and it renders as a heading over its
+children instead of a button itself; only the children are selectable/croppable:
+
+```tsx
+imageTypes: [
+  {
+    name: "News",
+    value: "news",
+    label: "News",
+    crops: [
+      { value: "manset", label: "Headline", aspect: 16 / 9, cropTypeId: 1 },
+      { value: "kapak", label: "Cover", aspect: 4 / 3, cropTypeId: 2 },
+    ],
+  },
+  // Ungrouped entries still work exactly as before — mix and match freely.
+  { value: "avatar", label: "Avatar", aspect: 1, cropTypeId: 102 },
+],
+```
+
+The group's own `value` isn't selectable, but it isn't just decoration either: whenever a saved
+type/crop came from inside that group, the group's `value` is sent back as a top-level `typeId`
+field on the save request (alongside `clientId`, see "cropByUsageType için örnek uçtan uca akış").
+`name` is the heading text shown above the group's buttons (falls back to `label` if omitted).
 
 If omitted, `imageTypes` and `sizePresets` fall back to a locale-aware built-in default set
 (English by default, Turkish when `locale: "tr"`).
@@ -137,26 +165,27 @@ Below are the exact request/response shapes your backend must implement for the 
 `config.endpoints`. The package **never generates the `id` field itself** — it always expects it
 from the API response.
 
-If `config.clientId` is set, it's automatically attached to **every** request as a fully opaque
-value — the package never interprets it, only forwards it:
+If `config.clientId` and/or `config.siteId` are set, they're automatically attached to **every**
+request as fully opaque values (each a `string` or a `number`, your choice) — the package never
+interprets them, only forwards them:
 
-- `upload`: added as a `clientId` field in the `multipart/form-data`
-- `list`: added as a `?clientId=...` query parameter
-- `save` / `delete`: added as a `clientId` field in the JSON body
+- `upload`: added as `clientId`/`siteId` fields in the `multipart/form-data`
+- `list`: added as `?clientId=...&siteId=...` query parameters
+- `save` / `delete`: added as `clientId`/`siteId` fields in the JSON body
 
 #### `LumeoImage` (shared data model across every endpoint)
 
 ```ts
 interface LumeoImage {
-  id: string;           // assigned by the API, required
+  id: string;               // assigned by the API, required
   fileName: string;
   url: string;
-  uploadedAt: string;    // ISO 8601, e.g. "2026-07-01T20:15:30.000Z"
-  type?: string;         // e.g. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri"
-  fileSize?: number;     // bytes
-  mimeType?: string;     // e.g. "image/jpeg"
-  width?: number;        // original pixel width, returned by the API after upload
-  height?: number;       // original pixel height, returned by the API after upload
+  uploadedAt: string;        // ISO 8601, e.g. "2026-07-01T20:15:30.000Z"
+  type?: string | number;    // e.g. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri" — or a numeric id
+  fileSize?: number;         // bytes
+  mimeType?: string;         // e.g. "image/jpeg"
+  width?: number;            // original pixel width, returned by the API after upload
+  height?: number;           // original pixel height, returned by the API after upload
 }
 ```
 
@@ -177,6 +206,7 @@ Content-Type: multipart/form-data; boundary=...
 files[]: (binary) headline-image.jpg
 files[]: (binary) cover-photo.png
 clientId: news-site-42        (if config.clientId is set)
+siteId: 42                    (if config.siteId is set)
 ```
 
 **Expected response (200):**
@@ -222,7 +252,7 @@ clientId: news-site-42        (if config.clientId is set)
 
 ```
 GET /api/images
-GET /api/images?clientId=news-site-42   (if config.clientId is set)
+GET /api/images?clientId=news-site-42&siteId=42   (if config.clientId/siteId are set)
 ```
 
 **Expected response (200)** — either shape is accepted:
@@ -329,8 +359,8 @@ the original image's natural pixel space, `x`/`y` from the top-left corner:
 
 **d) If both tabs were used**, `sizes` and `crops` are sent together (b + c combined).
 
-> If `config.clientId` is set, a `"clientId": "news-site-42"` field is automatically added to all
-> of the bodies above.
+> If `config.clientId`/`config.siteId` are set, `"clientId": "news-site-42"`/`"siteId": 42` fields
+> are automatically added to all of the bodies above.
 
 **Expected response (200):**
 
@@ -420,11 +450,11 @@ presets, three for "Detail" — alongside the untouched original:
 **Request:**
 
 ```json
-{ "id": "img_9f1c2a", "clientId": "news-site-42" }
+{ "id": "img_9f1c2a", "clientId": "news-site-42", "siteId": 42 }
 ```
 
-(Sent via the `DELETE` method with a `Content-Type: application/json` body. The `clientId` field
-is only added if `config.clientId` is set.)
+(Sent via the `DELETE` method with a `Content-Type: application/json` body. The `clientId`/`siteId`
+fields are only added if `config.clientId`/`config.siteId` are set.)
 
 **Expected response (200):**
 
@@ -562,9 +592,10 @@ const config: LumeoConfig = {
   waitForSuccess: false,
   maxFileSizeMB: 10,
   accept: ["image/*"],
-  // Opaque, sizin tanımladığınız bir kimlik (site/tenant/proje id vb.) —
-  // paket bunu yorumlamaz, sadece her isteğe aynen ekler.
+  // Opaque, sizin tanımladığınız kimlikler (site/tenant/proje id vb.) — string ya da
+  // number olabilir, paket bunları yorumlamaz, sadece her isteğe aynen ekler.
   clientId: "news-site-42",
+  siteId: 42,
   // Tüm hazır arayüz metinlerinin dili. Varsayılan: "en". Türkçe için "tr" verin.
   locale: "tr",
 };
@@ -588,8 +619,8 @@ hazır varsayılanlar tamamen devre dışı kalır:
 const config: LumeoConfig = {
   endpoints: { /* ... */ },
   imageTypes: [
-    { value: "hero", label: "Ana Görsel", aspect: 21 / 9, width: 2560, height: 1097, typeId: 101 },
-    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, typeId: 102 },
+    { value: "hero", label: "Ana Görsel", aspect: 21 / 9, width: 2560, height: 1097, cropTypeId: 101 },
+    { value: "avatar", label: "Avatar", aspect: 1, width: 512, height: 512, cropTypeId: 102 },
   ],
   sizePresets: [
     { id: "square", width: 512, height: 512 },
@@ -601,11 +632,40 @@ const config: LumeoConfig = {
 `imageTypes[].width`/`height` opsiyoneldir ve `aspect`'ten bağımsız çalışır — verildiğinde,
 kullanım tipi seçicisinde etiketin yanında (ör. `21:9 · 2560×1097`) editöre yardımcı bir bilgi
 olarak gösterilir; kırpma aracının davranışını değiştirmez (o hâlâ sadece `aspect`'e bağlıdır).
-`typeId`, slug niteliğindeki `value`'dan ayrı, opsiyonel bir tanımlayıcıdır (ör. backend/veritabanı
-id'si) — verildiğinde, o tip için `cropByUsageType` ile oluşturulan her kadrajın üzerine
-`CropRegion.typeId` olarak taşınır; ayrıca her kadrajda otomatik olarak bir `CropRegion.aspectRatio`
-("WxH" formatında, ör. `"21x9"`) da bulunur — tam şeklini aşağıdaki "cropByUsageType için örnek
-uçtan uca akış" bölümünde görebilirsiniz.
+`cropTypeId`, slug niteliğindeki `value`'dan ayrı, opsiyonel bir tanımlayıcıdır (ör.
+backend/veritabanı id'si) — verildiğinde, o tip için `cropByUsageType` ile oluşturulan her kadrajın
+üzerine `CropRegion.cropTypeId` olarak taşınır; ayrıca her kadrajda otomatik olarak bir
+`CropRegion.aspectRatio` ("WxH" formatında, ör. `"21x9"`) da bulunur — tam şeklini aşağıdaki
+"cropByUsageType için örnek uçtan uca akış" bölümünde görebilirsiniz.
+
+#### Kullanım tiplerini gruplama
+
+Herhangi bir `imageTypes` girdisi, sadece görüntüde gruplamak amacıyla başka girdileri içine
+nest edebilir — `crops` verin (aynı `LumeoImageTypeOption` şekli, nested olmayan) ve o girdi kendisi
+buton olarak değil, altındaki çocukların üzerinde bir başlık olarak render edilir; sadece
+çocukları seçilebilir/kırpılabilir olur:
+
+```tsx
+imageTypes: [
+  {
+    name: "Haberler",
+    value: "haberler",
+    label: "Haberler",
+    crops: [
+      { value: "manset", label: "Manşet", aspect: 16 / 9, cropTypeId: 1 },
+      { value: "kapak", label: "Kapak", aspect: 4 / 3, cropTypeId: 2 },
+    ],
+  },
+  // Nested olmayan girdiler eskisi gibi çalışmaya devam eder — karıştırıp eşleştirebilirsiniz.
+  { value: "avatar", label: "Avatar", aspect: 1, cropTypeId: 102 },
+],
+```
+
+Grubun kendi `value`'su seçilebilir değildir ama sadece dekoratif de değildir: kaydedilen
+tip/kadraj o grubun içinden geldiyse, grubun `value`'su kaydetme isteğinde `clientId` ile aynı
+katmanda, üst seviye bir `typeId` alanı olarak geri gönderilir (bkz. "cropByUsageType için örnek
+uçtan uca akış"). `name`, grubun butonlarının üzerinde gösterilen başlık metnidir (verilmezse
+`label`'a düşer).
 
 `imageTypes` ve `sizePresets` verilmezse, dile göre (locale) değişen hazır bir varsayılan sete
 düşer (varsayılan olarak İngilizce, `locale: "tr"` verildiğinde Türkçe).
@@ -648,26 +708,27 @@ sadece bu iki dili barındırır; başka bir değer verilirse İngilizce'ye dü�
 aşağıdadır. Paket, `id` alanını **asla kendisi üretmez** — her zaman API yanıtından gelmesini
 bekler.
 
-`config.clientId` verilirse (opsiyonel), tamamen opak bir değer olarak **her istekte otomatik
-olarak** eklenir — paket bu değeri hiç yorumlamaz, sadece taşır:
+`config.clientId` ve/veya `config.siteId` verilirse (ikisi de opsiyonel, `string` ya da `number`
+olabilir), tamamen opak birer değer olarak **her istekte otomatik olarak** eklenir — paket bu
+değerleri hiç yorumlamaz, sadece taşır:
 
-- `upload`: `multipart/form-data` içine `clientId` alanı olarak eklenir
-- `list`: URL'ye `?clientId=...` query parametresi olarak eklenir
-- `save` / `delete`: JSON gövdesine `clientId` alanı olarak eklenir
+- `upload`: `multipart/form-data` içine `clientId`/`siteId` alanları olarak eklenir
+- `list`: URL'ye `?clientId=...&siteId=...` query parametreleri olarak eklenir
+- `save` / `delete`: JSON gövdesine `clientId`/`siteId` alanları olarak eklenir
 
 #### `LumeoImage` (tüm endpoint'lerde ortak veri modeli)
 
 ```ts
 interface LumeoImage {
-  id: string;           // API tarafından atanır, zorunlu
+  id: string;                // API tarafından atanır, zorunlu
   fileName: string;
   url: string;
-  uploadedAt: string;   // ISO 8601, ör. "2026-07-01T20:15:30.000Z"
-  type?: string;        // ör. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri"
-  fileSize?: number;    // byte
-  mimeType?: string;    // ör. "image/jpeg"
-  width?: number;       // orijinal piksel genişliği, upload sonrası API'den döner
-  height?: number;      // orijinal piksel yüksekliği, upload sonrası API'den döner
+  uploadedAt: string;         // ISO 8601, ör. "2026-07-01T20:15:30.000Z"
+  type?: string | number;     // ör. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri" — ya da sayısal bir id
+  fileSize?: number;          // byte
+  mimeType?: string;          // ör. "image/jpeg"
+  width?: number;             // orijinal piksel genişliği, upload sonrası API'den döner
+  height?: number;            // orijinal piksel yüksekliği, upload sonrası API'den döner
 }
 ```
 
@@ -688,6 +749,7 @@ Content-Type: multipart/form-data; boundary=...
 files[]: (binary) manset-gorseli.jpg
 files[]: (binary) kapak-foto.png
 clientId: news-site-42        (config.clientId tanımlıysa)
+siteId: 42                    (config.siteId tanımlıysa)
 ```
 
 **Beklenen yanıt (200):**
@@ -733,7 +795,7 @@ clientId: news-site-42        (config.clientId tanımlıysa)
 
 ```
 GET /api/images
-GET /api/images?clientId=news-site-42   (config.clientId tanımlıysa)
+GET /api/images?clientId=news-site-42&siteId=42   (config.clientId/siteId tanımlıysa)
 ```
 
 **Beklenen yanıt (200)** — iki şekilden biri kabul edilir:
@@ -841,8 +903,8 @@ piksel boyutuna göredir, `x`/`y` sol-üst köşeden itibaren:
 **d) Aynı anda her iki sekmede de seçim yapıldıysa**, `sizes` ve `crops` birlikte gönderilir (b + c
 birleşimi).
 
-> `config.clientId` tanımlıysa yukarıdaki gövdelerin hepsine otomatik olarak
-> `"clientId": "news-site-42"` alanı eklenir.
+> `config.clientId`/`config.siteId` tanımlıysa yukarıdaki gövdelerin hepsine otomatik olarak
+> `"clientId": "news-site-42"`/`"siteId": 42` alanları eklenir.
 
 **Beklenen yanıt (200):**
 
@@ -943,11 +1005,11 @@ akışı canlı görmek için açabilirsiniz.
 **İstek:**
 
 ```json
-{ "id": "img_9f1c2a", "clientId": "news-site-42" }
+{ "id": "img_9f1c2a", "clientId": "news-site-42", "siteId": 42 }
 ```
 
-(`DELETE` metodu ile, `Content-Type: application/json` gövdesinde gönderilir. `clientId` alanı
-sadece `config.clientId` tanımlıysa eklenir.)
+(`DELETE` metodu ile, `Content-Type: application/json` gövdesinde gönderilir. `clientId`/`siteId`
+alanları sadece `config.clientId`/`config.siteId` tanımlıysa eklenir.)
 
 **Beklenen yanıt (200):**
 
@@ -965,10 +1027,11 @@ alanı zorunlu değildir ama okunabilirlik için önerilir. Çalışan bir mock 
 
 Bu bölüm, `ImageModal`'ı `cropByUsageType` ile kullanırken (bkz. `ImageModal / CropByUsageType`
 Storybook örneği) backend'inizin göreceği tam istek/yanıt döngüsünü, gerçekçi Türkçe örnek veriyle
-ve her istekte sabit `clientId: "newsId1453"` ile gösterir — API'yi yazacak geliştirici ekibinize
-doğrudan verebileceğiniz bir referanstır. Kadraj (`crops`) burada ayrı bir dosya değil, görselin
-kendi üzerindeki bir alandır; görsel tekrar açıldığında aynı kadrajlar geri gelir, listede de her
-zaman tek bir satır olarak kalır.
+ve her istekte sabit `clientId: "newsId1453"` ile (ayrıca `siteId`'nin de sayısal olabileceğini
+göstermek için sabit `siteId: 7` ile) gösterir — API'yi yazacak geliştirici ekibinize doğrudan
+verebileceğiniz bir referanstır. Kadraj (`crops`) burada ayrı bir dosya değil, görselin kendi
+üzerindeki bir alandır; görsel tekrar açıldığında aynı kadrajlar geri gelir, listede de her zaman
+tek bir satır olarak kalır.
 
 **1) Yükleme — `POST` `endpoints.upload`**
 
@@ -978,6 +1041,7 @@ Content-Type: multipart/form-data; boundary=...
 
 files[]: (binary) sahil-haberi.jpg
 clientId: newsId1453
+siteId: 7
 ```
 
 Beklenen yanıt (henüz hiç kadraj yok):
@@ -1003,7 +1067,7 @@ Beklenen yanıt (henüz hiç kadraj yok):
 **2) Listeleme — `GET` `endpoints.list`**
 
 ```
-GET /api/images?clientId=newsId1453
+GET /api/images?clientId=newsId1453&siteId=7
 ```
 
 Henüz kimse kadraj yapmadığı için `crops` alanı yok:
@@ -1029,12 +1093,17 @@ Henüz kimse kadraj yapmadığı için `crops` alanı yok:
 
 Kullanıcı modalda "Manşet" (16:9) ve "Kapak" (4:3) kullanım tiplerine tıklayıp ikisini de
 kadrajladı, sonra Kaydet'e bastı. `cropByUsageType` modunda tekil bir `type` alanı gönderilmez —
-her kadraj kendi `type`'ını taşır:
+her kadraj kendi `type`'ını (ve varsa `cropTypeId`'sini) taşır. Bu örnekte "Manşet" ve "Kapak",
+config'de "Haberler" (`value: "haberler"`) adında bir grubun (`imageTypes[].crops`) altında
+tanımlı — bu yüzden istek gövdesinde, `clientId` ile aynı üst seviyede, o grubun `value`'sunu
+taşıyan bir `typeId` alanı da gönderilir:
 
 ```json
 {
   "id": "gorsel_7a41",
   "clientId": "newsId1453",
+  "siteId": 7,
+  "typeId": "haberler",
   "crops": [
     {
       "id": "b2f1e4a0-1c3d-4e5f-8a9b-0c1d2e3f4a5b",
@@ -1043,7 +1112,7 @@ her kadraj kendi `type`'ını taşır:
       "aspect": 1.7778,
       "aspectRatio": "16x9",
       "type": "manset",
-      "typeId": 1,
+      "cropTypeId": 1,
       "color": "#ef4444",
       "x": 0,
       "y": 160,
@@ -1057,7 +1126,7 @@ her kadraj kendi `type`'ını taşır:
       "aspect": 1.3333,
       "aspectRatio": "4x3",
       "type": "kapak",
-      "typeId": 2,
+      "cropTypeId": 2,
       "color": "#22c55e",
       "x": 107,
       "y": 0,
@@ -1067,6 +1136,9 @@ her kadraj kendi `type`'ını taşır:
   ]
 }
 ```
+
+Kullanım tipleri gruplanmamış (nested `crops` olmadan) tanımlıysa `typeId` alanı hiç gönderilmez —
+sadece aktif tip(ler) bir grubun içinden geldiğinde eklenir.
 
 Beklenen yanıt:
 
@@ -1101,8 +1173,10 @@ bir satır eklenmez, liste hâlâ tek kayıt gösterir:
           "id": "b2f1e4a0-1c3d-4e5f-8a9b-0c1d2e3f4a5b",
           "name": "Manşet",
           "aspectLabel": "Manşet",
-          "aspect": 1.7777777777777777,
+          "aspect": 1.7778,
+          "aspectRatio": "16x9",
           "type": "manset",
+          "cropTypeId": 1,
           "color": "#ef4444",
           "x": 0,
           "y": 160,
@@ -1113,8 +1187,10 @@ bir satır eklenmez, liste hâlâ tek kayıt gösterir:
           "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
           "name": "Kapak",
           "aspectLabel": "Kapak",
-          "aspect": 1.3333333333333333,
+          "aspect": 1.3333,
+          "aspectRatio": "4x3",
           "type": "kapak",
+          "cropTypeId": 2,
           "color": "#22c55e",
           "x": 107,
           "y": 0,
@@ -1135,7 +1211,7 @@ ve Kapak, ikisi de yeşil/tikli) hazır halde açar — kullanıcı sıfırdan k
 İstek:
 
 ```json
-{ "id": "gorsel_7a41", "clientId": "newsId1453" }
+{ "id": "gorsel_7a41", "clientId": "newsId1453", "siteId": 7 }
 ```
 
 Beklenen yanıt:

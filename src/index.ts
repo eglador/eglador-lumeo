@@ -1,6 +1,7 @@
 export type {
   LumeoImage,
   LumeoImageTypeOption,
+  LumeoTypeValue,
   LumeoConfig,
   LumeoEndpoints,
   LumeoViewMode,

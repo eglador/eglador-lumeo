@@ -66,7 +66,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
       aspect: roundAspect(option.aspect),
       aspectRatio: option.aspect ? formatAspectRatioSlug(option.aspect) : undefined,
       type: option.value,
-      typeId: option.typeId,
+      cropTypeId: option.cropTypeId,
       color: pickRegionColor(regionsApi.regions.map((region) => region.color)),
       ...rect,
     });

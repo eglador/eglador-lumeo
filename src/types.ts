@@ -1,9 +1,12 @@
 /** "en" (default) or "tr" — switches every built-in UI string. */
 export type LumeoLocale = "en" | "tr";
 
+/** A usage-type's identifying value/type tag — a slug (`"manset"`) or a numeric backend id (`5`), your choice. */
+export type LumeoTypeValue = string | number;
+
 export interface LumeoImageTypeOption {
-  /** Stable machine value sent to the API, e.g. "manset" */
-  value: string;
+  /** Stable machine value sent to the API — a slug like `"manset"` or a numeric id, e.g. `5`. */
+  value: LumeoTypeValue;
   /** Human readable label shown in the UI, e.g. "Manşet" */
   label: string;
   /** Preferred crop ratio (width / height) for this usage type. Omit to allow free-form cropping. */
@@ -14,9 +17,23 @@ export interface LumeoImageTypeOption {
   height?: number;
   /**
    * Optional backend identifier for this usage type (e.g. a database id), distinct from the
-   * slug-like `value`. Carried onto any crop created for this type as `CropRegion.typeId`.
+   * slug-like `value`. Carried onto any crop created for this type as `CropRegion.cropTypeId`.
    */
-  typeId?: string | number;
+  cropTypeId?: string | number;
+  /**
+   * Optional display name for a group heading — only meaningful when `crops` is set below.
+   * Falls back to `label` when omitted.
+   */
+  name?: string;
+  /**
+   * Nests other usage-type options under this one purely for display grouping — e.g. an "Ana Tip"
+   * entry whose children all render together under one heading (`name`/`label`). When set, this
+   * entry itself is NOT selectable/croppable — only the entries inside `crops` are. `value` on a
+   * group entry still matters: it's sent back as the top-level `SaveImagePayload.typeId` whenever
+   * a saved crop came from one of this group's children. Omit for a plain, directly selectable
+   * usage type (existing, non-nested behavior — unaffected).
+   */
+  crops?: LumeoImageTypeOption[];
 }
 
 export interface LumeoImage {
@@ -26,7 +43,7 @@ export interface LumeoImage {
   url: string;
   /** ISO 8601 timestamp as returned by the API. */
   uploadedAt: string;
-  type?: string;
+  type?: LumeoTypeValue;
   fileSize?: number;
   mimeType?: string;
   /** Original pixel dimensions, as returned by the API after upload. */
@@ -52,9 +69,9 @@ export interface CropRegion {
   /** `aspect` formatted as a "WxH" ratio slug, e.g. "16x9" or "1x1". Undefined for free-form crops. */
   aspectRatio?: string;
   /** Usage-type value (`LumeoImageTypeOption.value`) this crop was seeded from, when created by selecting a usage type rather than a manual/custom aspect. Undefined for manual crops. */
-  type?: string;
-  /** `LumeoImageTypeOption.typeId` for the usage type this crop was seeded from, if one was configured. Undefined for manual crops or types without a `typeId`. */
-  typeId?: string | number;
+  type?: LumeoTypeValue;
+  /** `LumeoImageTypeOption.cropTypeId` for the usage type this crop was seeded from, if one was configured. Undefined for manual crops or types without a `cropTypeId`. */
+  cropTypeId?: string | number;
   /** Hex color used to draw this region's outline and its list dot. Assigned once at creation. */
   color: string;
   /** All coordinates are in the original image's natural pixel space. */
@@ -129,10 +146,17 @@ export interface LumeoConfig {
   /**
    * Opaque, consumer-supplied identifier (e.g. site/tenant/project id) attached to every
    * outgoing request: as a `clientId` form field on upload, a `clientId` query param on
-   * list, and a `clientId` JSON field on save/delete. The package never reads or
-   * interprets this value — it only forwards it.
+   * list, and a `clientId` JSON field on save/delete. String or numeric, your choice. The
+   * package never reads or interprets this value — it only forwards it.
    */
-  clientId?: string;
+  clientId?: LumeoTypeValue;
+  /**
+   * A second opaque, consumer-supplied identifier (e.g. a site id), forwarded alongside
+   * `clientId` in every outgoing request the same way — `siteId` form field on upload, query
+   * param on list, JSON field on save/delete. String or numeric, your choice. The package never
+   * reads or interprets this value — it only forwards it.
+   */
+  siteId?: LumeoTypeValue;
 }
 
 export type RejectReason = "type" | "size" | "max-files";
@@ -149,7 +173,14 @@ export interface ValidateFilesResult {
 
 export interface SaveImagePayload {
   id: string;
-  type?: string;
+  type?: LumeoTypeValue;
+  /**
+   * Value of the parent "ana tip" (`LumeoImageTypeOption.crops` group) that the selected/cropped
+   * usage type belongs to, when it was defined inside a nested group rather than top-level. Sits
+   * at the same top level as `clientId` (both added by the API layer, not nested inside `crops`).
+   * Omitted when the active type isn't part of any group.
+   */
+  typeId?: LumeoTypeValue;
   /** Preset sizes picked in the "Boyut Seçenekleri" tab — no manual crop coordinates. */
   sizes?: SelectedSize[];
   /** Manually dragged crop regions picked in the "Özel Kırpma" tab. */

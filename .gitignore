@@ -4,3 +4,5 @@ storybook-static
 *.log
 .DS_Store
 .claude
+screenshots/nested-toggle-active.png
+screenshots/nested-types-modal.png

@@ -3,7 +3,7 @@ import { X, Trash2, Save, SlidersHorizontal, Tag, Calendar, FileType, Ratio } fr
 import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useCropRegions } from "../../hooks/useCropRegions";
 import { useSizeSelections } from "../../hooks/useSizeSelections";
-import { resolveImageTypes } from "../../lib/imageTypes";
+import { resolveImageTypes, findGroupValueForType } from "../../lib/imageTypes";
 import { resolveSizePresets, toSelectedSize } from "../../lib/sizePresets";
 import { saveImageMeta, deleteImage } from "../../lib/api";
 import { refreshOnce } from "../../lib/refreshOnce";
@@ -14,7 +14,7 @@ import { ConfirmDialog } from "../shared/ConfirmDialog";
 import { TypeSelector } from "./TypeSelector";
 import { CropTabs } from "./CropStudio/CropTabs";
 import { CropStudio } from "./CropStudio/CropStudio";
-import type { LumeoImage } from "../../types";
+import type { LumeoImage, LumeoTypeValue } from "../../types";
 
 export interface ImageModalProps {
   image: LumeoImage;
@@ -45,7 +45,7 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
     () => resolveSizePresets(config.sizePresets, config.locale),
     [config.sizePresets, config.locale]
   );
-  const [selectedType, setSelectedType] = useState<string | undefined>(image.type);
+  const [selectedType, setSelectedType] = useState<LumeoTypeValue | undefined>(image.type);
   // If this image already has saved crop regions (reopened after a previous save), jump straight
   // into the crop tool instead of the plain tagging view so the user sees them immediately.
   const [cropEnabled, setCropEnabled] = useState(Boolean(image.crops?.length));
@@ -60,11 +60,20 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
   const handleSave = () => {
     setIsSaving(true);
     const selectedSizes = sizePresets.filter((preset) => sizeSelection.isSelected(preset.id));
+    // The active type's enclosing "ana tip" group value, if it was picked from a nested group
+    // (classic single-type flow) or if any saved crop's type was (cropByUsageType flow) — sent
+    // back as a top-level `typeId`, alongside `clientId`, so the backend knows which group this
+    // save belongs to. Undefined when the active type(s) aren't grouped.
+    const activeTypeValue = cropByUsageType
+      ? cropRegions.regions.find((region) => region.type !== undefined)?.type
+      : selectedType;
+    const groupValue = findGroupValueForType(imageTypes, activeTypeValue);
     const payload = {
       id: image.id,
       // In cropByUsageType mode, each crop already carries its own `type` — there's no single
       // overall type to tag the image with.
       ...(cropByUsageType ? {} : { type: selectedType }),
+      ...(groupValue !== undefined ? { typeId: groupValue } : {}),
       ...(!cropByUsageType && cropEnabled && selectedSizes.length > 0
         ? { sizes: selectedSizes.map((preset) => toSelectedSize(preset)) }
         : {}),

@@ -12,7 +12,7 @@ import { ImageNode } from "./lexical/ImageNode";
 import { ImageObjectDropPlugin } from "./lexical/ImageObjectDropPlugin";
 import { ToolbarPlugin } from "./lexical/ToolbarPlugin";
 import { JsonOutputPlugin } from "./lexical/JsonOutputPlugin";
-import type { LumeoConfig } from "../types";
+import type { LumeoConfig, LumeoImageTypeOption } from "../types";
 
 const baseConfig: LumeoConfig = {
   endpoints: {
@@ -23,7 +23,8 @@ const baseConfig: LumeoConfig = {
   },
   maxFileSizeMB: 10,
   accept: ["image/*"],
-  clientId:"client-storybook"
+  clientId: "client-storybook",
+  siteId: 42,
 };
 
 const meta: Meta<typeof LumeoUploader> = {
@@ -72,6 +73,28 @@ export const Max10MB: Story = {
     </LumeoProvider>
   ),
 };
+
+// Demonstrates grouping: "Haberler" and "Reklam" are display-only groups (imageTypes[].crops)
+// whose children render as one heading + nested buttons; "galeri" stays a plain, ungrouped entry
+// to show grouped and flat options can be mixed freely in the same list.
+const nestedImageTypesDemo: LumeoImageTypeOption[] = [
+  {
+    name: "Haberler",
+    value: "haberler",
+    label: "Haberler",
+    crops: [
+      { value: "manset", label: "Manşet", aspect: 16 / 9, cropTypeId: 1 },
+      { value: "kapak", label: "Kapak", aspect: 4 / 3, cropTypeId: 2 },
+    ],
+  },
+  {
+    name: "Reklam",
+    value: "reklam",
+    label: "Reklam",
+    crops: [{ value: "banner", label: "Banner", aspect: 21 / 9, cropTypeId: 3 }],
+  },
+  { value: "galeri", label: "Galeri Görseli", cropTypeId: 6 },
+];
 
 const cropDemoLexicalConfig = {
   namespace: "CropByUsageTypeUploaderDemo",
@@ -135,7 +158,7 @@ function CropByUsageTypeUploaderHarness() {
 export const CropByUsageTypeDemo: Story = {
   name: "Uçtan uca: yükle + waitForSuccess: true + cropByUsageType modal + MiniViewer + Lexical",
   render: () => (
-    <LumeoProvider config={{ ...baseConfig, waitForSuccess: true, locale: "tr" }}>
+    <LumeoProvider config={{ ...baseConfig, waitForSuccess: true, locale: "tr", imageTypes: nestedImageTypesDemo }}>
       <CropByUsageTypeUploaderHarness />
     </LumeoProvider>
   ),
@@ -145,7 +168,7 @@ export const CropByUsageTypeDemo: Story = {
     docs: {
       description: {
         story:
-          "Bir görsel yükleyin (`waitForSuccess: true` olduğu için üstte yükleme çubuğu görünür), listeden açın: modal doğrudan `cropByUsageType` modunda açılır — kullanım tipine tıklamak o oranda bir kırpma alanı oluşturur ve üstüne gelince küçük bir önizleme gösterir, Kaydet'e basınca kırpmalar görselin kendi `crops` alanına kaydedilir (yeni bir liste satırı oluşmaz). Sağ altta başlangıçta küçültülmüş (`defaultCollapsed`) ve sürüklenebilir bir `LumeoMiniViewer` de var; açıp bir görseli alttaki Lexical editörüne sürükleyip bırakırsanız görselin tüm bilgileriyle (id, dosya adı, boyutlar, tip vb. — sadece `url` değil) gerçek bir görsel nesnesi olarak eklenir (`ImageNode` + `ImageObjectDropPlugin`, `src/stories/lexical/`). Editörde kalın/italik/altı çizili/üstü çizili için bir araç çubuğu (`ToolbarPlugin`) ve altında editör durumunun canlı JSON çıktısını gösteren bir panel (`JsonOutputPlugin`) var — bıraktığınız görselin tüm alanlarını orada, düğümün kendi `image` anahtarı altında görebilirsiniz.",
+          "Bir görsel yükleyin (`waitForSuccess: true` olduğu için üstte yükleme çubuğu görünür), listeden açın: modal doğrudan `cropByUsageType` modunda açılır — kullanım tipine tıklamak o oranda bir kırpma alanı oluşturur ve üstüne gelince küçük bir önizleme gösterir, Kaydet'e basınca kırpmalar görselin kendi `crops` alanına kaydedilir (yeni bir liste satırı oluşmaz). Bu örnekte `imageTypes` gruplu verilmiş: \"Haberler\" (Manşet, Kapak) ve \"Reklam\" (Banner) birer başlık altında toplanmış görünür, \"Galeri Görseli\" ise gruplanmamış düz bir seçenek olarak yanlarında kalır — Kaydet'e basınca, kırpılan tip bir grubun içindeyse istek gövdesine `clientId` ile aynı seviyede grubun `value`'sunu taşıyan bir `typeId` alanı da eklenir. Sağ altta başlangıçta küçültülmüş (`defaultCollapsed`) ve sürüklenebilir bir `LumeoMiniViewer` de var; açıp bir görseli alttaki Lexical editörüne sürükleyip bırakırsanız görselin tüm bilgileriyle (id, dosya adı, boyutlar, tip vb. — sadece `url` değil) gerçek bir görsel nesnesi olarak eklenir (`ImageNode` + `ImageObjectDropPlugin`, `src/stories/lexical/`). Editörde kalın/italik/altı çizili/üstü çizili için bir araç çubuğu (`ToolbarPlugin`) ve altında editör durumunun canlı JSON çıktısını gösteren bir panel (`JsonOutputPlugin`) var — bıraktığınız görselin tüm alanlarını orada, düğümün kendi `image` anahtarı altında görebilirsiniz.",
       },
     },
   },

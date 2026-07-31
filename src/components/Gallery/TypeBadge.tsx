@@ -1,14 +1,14 @@
 import { findImageTypeLabel } from "../../lib/imageTypes";
 import { tag } from "../../styles/editorial";
-import type { LumeoImageTypeOption } from "../../types";
+import type { LumeoImageTypeOption, LumeoTypeValue } from "../../types";
 
 export interface TypeBadgeProps {
-  type?: string;
+  type?: LumeoTypeValue;
   imageTypes: LumeoImageTypeOption[];
 }
 
 export function TypeBadge({ type, imageTypes }: TypeBadgeProps) {
-  if (!type) return null;
-  const label = findImageTypeLabel(type, imageTypes) ?? type;
+  if (type === undefined) return null;
+  const label = findImageTypeLabel(type, imageTypes) ?? String(type);
   return <span className={tag}>{label}</span>;
 }

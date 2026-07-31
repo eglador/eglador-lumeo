@@ -1,13 +1,30 @@
-import type { LumeoConfig, LumeoImage, SaveImagePayload } from "../types";
+import type { LumeoConfig, LumeoImage, LumeoTypeValue, SaveImagePayload } from "../types";
 
-function withClientIdQuery(url: string, clientId?: string): string {
-  if (!clientId) return url;
+/** `clientId` and/or `siteId` (whichever are set) as query params — same opaque pass-through pair used on every endpoint. */
+function withIdQuery(url: string, config: LumeoConfig): string {
+  const params: [string, LumeoTypeValue | undefined][] = [
+    ["clientId", config.clientId],
+    ["siteId", config.siteId],
+  ];
+  const query = params
+    .filter((entry): entry is [string, LumeoTypeValue] => entry[1] !== undefined)
+    .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
+    .join("&");
+  if (!query) return url;
   const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}clientId=${encodeURIComponent(clientId)}`;
+  return `${url}${separator}${query}`;
+}
+
+/** `{ clientId, siteId }` (only the ones that are set) — spread onto a JSON request body. */
+function idFields(config: LumeoConfig): { clientId?: LumeoTypeValue; siteId?: LumeoTypeValue } {
+  return {
+    ...(config.clientId !== undefined ? { clientId: config.clientId } : {}),
+    ...(config.siteId !== undefined ? { siteId: config.siteId } : {}),
+  };
 }
 
 export async function fetchImageList(config: LumeoConfig, signal?: AbortSignal): Promise<LumeoImage[]> {
-  const url = withClientIdQuery(config.endpoints.list, config.clientId);
+  const url = withIdQuery(config.endpoints.list, config);
   const res = await fetch(url, { signal });
   if (!res.ok) {
     throw new Error(`Failed to fetch image list (${res.status})`);
@@ -22,7 +39,8 @@ export function uploadImages(config: LumeoConfig, files: File[]): Promise<Respon
   // instead of silently keeping only the last one — the standard multipart/form-data array
   // convention, harmless for backends that don't require the brackets either.
   files.forEach((file) => formData.append("files[]", file));
-  if (config.clientId) formData.append("clientId", config.clientId);
+  if (config.clientId !== undefined) formData.append("clientId", String(config.clientId));
+  if (config.siteId !== undefined) formData.append("siteId", String(config.siteId));
   return fetch(config.endpoints.upload, { method: "POST", body: formData });
 }
 
@@ -30,7 +48,7 @@ export function saveImageMeta(config: LumeoConfig, payload: SaveImagePayload): P
   return fetch(config.endpoints.save, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(config.clientId ? { ...payload, clientId: config.clientId } : payload),
+    body: JSON.stringify({ ...payload, ...idFields(config) }),
   });
 }
 
@@ -38,6 +56,6 @@ export function deleteImage(config: LumeoConfig, id: string): Promise<Response> 
   return fetch(config.endpoints.delete, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(config.clientId ? { id, clientId: config.clientId } : { id }),
+    body: JSON.stringify({ id, ...idFields(config) }),
   });
 }

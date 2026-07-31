@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchImageList } from "../lib/api";
-import type { LumeoConfig, LumeoImage } from "../types";
+import type { LumeoConfig, LumeoImage, LumeoTypeValue } from "../types";
 
 export interface UseLumeoImagesOptions {
   /** Filter the returned `images` array to a single usage type. `allImages` is always unfiltered. */
-  type?: string;
+  type?: LumeoTypeValue;
   /** Skip the automatic fetch on mount; call `refetch()` manually instead. */
   skipInitialFetch?: boolean;
 }
@@ -59,7 +59,10 @@ export function useLumeoImages(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.endpoints.list]);
 
-  const images = type ? allImages.filter((image) => image.type === type) : allImages;
+  // Compared as strings: a native `<select>`'s value is always a string even when the configured
+  // `value`/`type` is numeric, so a strict `===` would otherwise never match a numeric type.
+  const images =
+    type !== undefined ? allImages.filter((image) => image.type !== undefined && String(image.type) === String(type)) : allImages;
 
   return { images, allImages, loading, error, refetch };
 }
