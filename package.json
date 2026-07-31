@@ -1,6 +1,6 @@
 {
   "name": "eglador-lumeo",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Drag & drop image upload, gallery, tagging and cropping toolkit for Next.js",
   "author": {
     "name": "Umut Yaldız",
