@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Images, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useLumeoImages } from "../../hooks/useLumeoImages";
-import { resolveImageTypes, findImageTypeLabel } from "../../lib/imageTypes";
+import { resolveImageTypes, findImageTypeLabel, imageTypeKey } from "../../lib/imageTypes";
 import { getMessages } from "../../lib/i18n";
 import { panel, iconButton, inputBase } from "../../styles/editorial";
 import type { LumeoImage } from "../../types";
@@ -205,7 +205,7 @@ export function LumeoMiniViewer({
           >
             <option value="all">{messages.all}</option>
             {imageTypes.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={imageTypeKey(option)} value={option.value}>
                 {option.label}
               </option>
             ))}

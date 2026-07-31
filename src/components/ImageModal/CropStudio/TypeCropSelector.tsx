@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { formatImageTypeMeta } from "../../../lib/imageTypes";
+import { formatImageTypeMeta, imageTypeKey } from "../../../lib/imageTypes";
 import type { Bounds } from "../../../lib/geometry";
 import type { CropRegion, LumeoImageTypeOption } from "../../../types";
 
@@ -32,7 +32,7 @@ export function TypeCropSelector({ options, regions, imageUrl, naturalSize, onTo
         const scale = canPreview ? PREVIEW_WIDTH / region!.width : 0;
 
         return (
-          <div key={option.value} className="lumeo:group lumeo:relative">
+          <div key={imageTypeKey(option)} className="lumeo:group lumeo:relative">
             <button
               type="button"
               onClick={() => onToggle(option)}

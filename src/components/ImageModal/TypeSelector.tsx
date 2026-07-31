@@ -1,4 +1,4 @@
-import { formatImageTypeMeta } from "../../lib/imageTypes";
+import { formatImageTypeMeta, imageTypeKey } from "../../lib/imageTypes";
 import type { LumeoImageTypeOption } from "../../types";
 
 export interface TypeSelectorProps {
@@ -15,7 +15,7 @@ export function TypeSelector({ options, value, onChange }: TypeSelectorProps) {
         const meta = formatImageTypeMeta(option);
         return (
           <button
-            key={option.value}
+            key={imageTypeKey(option)}
             type="button"
             onClick={() => onChange(isSelected ? undefined : option.value)}
             className={`lumeo:flex lumeo:flex-col lumeo:items-start lumeo:rounded-sm lumeo:border lumeo:px-2.5 lumeo:py-1 lumeo:text-xs lumeo:font-medium lumeo:transition-colors ${

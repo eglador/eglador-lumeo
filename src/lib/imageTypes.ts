@@ -30,6 +30,11 @@ export function resolveImageTypes(
   return resolveLocale(locale) === "tr" ? DEFAULT_IMAGE_TYPES_TR : DEFAULT_IMAGE_TYPES_EN;
 }
 
+/** Stable React list key for a usage-type option — combines `value` with `typeId` (when set) so options that might otherwise share the same `value` don't collide. */
+export function imageTypeKey(option: LumeoImageTypeOption): string {
+  return option.typeId !== undefined ? `${option.value}:${option.typeId}` : option.value;
+}
+
 export function findImageTypeLabel(
   value: string | undefined,
   options: LumeoImageTypeOption[]
