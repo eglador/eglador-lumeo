@@ -1,4 +1,11 @@
-import type { LumeoImageTypeOption, LumeoLocale, LumeoImage, LumeoTypeValue } from "../types";
+import type {
+  LumeoImageTypeOption,
+  LumeoLocale,
+  LumeoImage,
+  LumeoTypeValue,
+  RequiredImageTypesResult,
+  RequiredTypeStatus,
+} from "../types";
 import { resolveLocale } from "./i18n";
 
 export const DEFAULT_IMAGE_TYPES_EN: LumeoImageTypeOption[] = [
@@ -48,22 +55,33 @@ export function flattenImageTypes(options: LumeoImageTypeOption[]): LumeoImageTy
 }
 
 /**
- * Finds the enclosing group's `value` for a leaf option's `value`, when that leaf was defined
- * inside a group's `crops` rather than top-level. Returns undefined for ungrouped options — this
- * is what gets sent back as `SaveImagePayload.typeId`.
+ * Finds the enclosing group entry for an option's `value`, when it was defined inside a group's
+ * `crops` rather than top-level (at any nesting depth). Returns undefined for ungrouped/top-level
+ * options.
+ */
+export function findParentImageType(
+  options: LumeoImageTypeOption[],
+  value: LumeoTypeValue | undefined
+): LumeoImageTypeOption | undefined {
+  if (value === undefined) return undefined;
+  for (const option of options) {
+    if (!option.crops || option.crops.length === 0) continue;
+    if (option.crops.some((child) => child.value === value)) return option;
+    const nested = findParentImageType(option.crops, value);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
+/**
+ * Finds the enclosing group's `value` for a leaf option's `value` — this is what gets sent back
+ * as `SaveImagePayload.typeId`. Returns undefined for ungrouped options.
  */
 export function findGroupValueForType(
   options: LumeoImageTypeOption[],
   value: LumeoTypeValue | undefined
 ): LumeoTypeValue | undefined {
-  if (value === undefined) return undefined;
-  for (const option of options) {
-    if (!option.crops || option.crops.length === 0) continue;
-    if (option.crops.some((child) => child.value === value)) return option.value;
-    const nested = findGroupValueForType(option.crops, value);
-    if (nested !== undefined) return nested;
-  }
-  return undefined;
+  return findParentImageType(options, value)?.value;
 }
 
 export function findImageTypeLabel(
@@ -108,6 +126,80 @@ export function resolveCropLabels(image: LumeoImage, imageTypes: LumeoImageTypeO
   return image.crops.map((crop) =>
     crop.type !== undefined ? (findImageTypeLabel(crop.type, imageTypes) ?? String(crop.type)) : crop.name
   );
+}
+
+/** Every distinct crop `type` value used anywhere across `images`, normalized to strings so numeric and string-typed `value`s compare consistently. */
+function collectUsedTypeValues(images: LumeoImage[]): Set<string> {
+  const used = new Set<string>();
+  for (const image of images) {
+    for (const crop of image.crops ?? []) {
+      if (crop.type !== undefined) used.add(String(crop.type));
+    }
+  }
+  return used;
+}
+
+/**
+ * Builds a leaf's status directly from `used`; for a group, also builds one status per child (so
+ * per-child progress can be rendered) and the group itself is `satisfied` only once every child
+ * is.
+ */
+function buildRequiredStatus(option: LumeoImageTypeOption, used: Set<string>): RequiredTypeStatus {
+  if (option.crops && option.crops.length > 0) {
+    const children = flattenImageTypes(option.crops).map((leaf) => ({
+      option: leaf,
+      satisfied: used.has(String(leaf.value)),
+    }));
+    return { option, satisfied: children.every((child) => child.satisfied), children };
+  }
+  return { option, satisfied: used.has(String(option.value)) };
+}
+
+/** Every entry (group or leaf, at any nesting depth) that carries its own `required: true`. */
+function collectRequiredEntries(options: LumeoImageTypeOption[]): LumeoImageTypeOption[] {
+  const required: LumeoImageTypeOption[] = [];
+  for (const option of options) {
+    if (option.required) required.push(option);
+    if (option.crops && option.crops.length > 0) required.push(...collectRequiredEntries(option.crops));
+  }
+  return required;
+}
+
+/**
+ * Checks every `required` usage type (see `LumeoImageTypeOption.required`) against the **whole**
+ * `images` list at once — not per image. A plain/leaf `required` entry needs at least one crop of
+ * its exact type somewhere in the list; a group `required` entry needs at least one crop of
+ * **every one** of its children somewhere in the list (an "all of these" requirement — mark
+ * individual children `required` instead if you only need some subset covered). Intended for a
+ * consuming app to gate its own UI (e.g. disable a save button) — the package itself never blocks
+ * anything based on this.
+ */
+export function checkRequiredImageTypes(
+  images: LumeoImage[],
+  imageTypes: LumeoImageTypeOption[]
+): RequiredImageTypesResult {
+  const used = collectUsedTypeValues(images);
+  const statuses: RequiredTypeStatus[] = collectRequiredEntries(imageTypes).map((option) => ({
+    ...buildRequiredStatus(option, used),
+    parent: findParentImageType(imageTypes, option.value),
+  }));
+  const missing = statuses.filter((status) => !status.satisfied).map((status) => status.option);
+  return { valid: missing.length === 0, missing, statuses };
+}
+
+/**
+ * Plain-text label for a `required` entry (e.g. for a toast or `alert`) — a leaf's own label, or
+ * for a group its label followed by every child's label in parentheses, e.g.
+ * `"Reklam (Banner, Kare Reklam)"`. For a richer display that colors each child individually by
+ * its own satisfied state, render `RequiredTypeStatus.children` yourself instead (see the
+ * `LumeoUploader / CropByUsageTypeDemo` story or the README).
+ */
+export function formatRequiredEntryLabel(option: LumeoImageTypeOption): string {
+  if (option.crops && option.crops.length > 0) {
+    const childLabels = flattenImageTypes(option.crops).map((child) => child.label);
+    return `${option.name ?? option.label} (${childLabels.join(", ")})`;
+  }
+  return option.label;
 }
 
 function gcd(a: number, b: number): number {

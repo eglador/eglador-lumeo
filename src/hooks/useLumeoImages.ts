@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchImageList } from "../lib/api";
+import { fetchImageList, resolveListKey } from "../lib/api";
+import { subscribeToList, broadcastListUpdate } from "../lib/listStore";
 import type { LumeoConfig, LumeoImage, LumeoTypeValue } from "../types";
 
 export interface UseLumeoImagesOptions {
@@ -18,15 +19,21 @@ export interface UseLumeoImagesResult {
 }
 
 /**
- * Fetches the image list from the configured `list` endpoint and optionally
- * filters it by usage type. This is the primary helper for consuming
- * uploaded/tagged images elsewhere in a Next.js app.
+ * Fetches the image list from the configured `list` endpoint and optionally filters it by usage
+ * type. This is the primary helper for consuming uploaded/tagged images elsewhere in a Next.js
+ * app.
+ *
+ * Every instance pointed at the same effective list (same endpoint + `clientId`/`siteId`) shares
+ * one live cache: a successful fetch from *any* instance — including the package's own internal
+ * uses inside `LumeoUploader`/`ImageModal` after an upload/save/delete — updates every other
+ * instance too, automatically, no manual `refetch()` needed to stay in sync.
  */
 export function useLumeoImages(
   config: LumeoConfig,
   options: UseLumeoImagesOptions = {}
 ): UseLumeoImagesResult {
   const { type, skipInitialFetch } = options;
+  const listKey = resolveListKey(config);
   const [allImages, setAllImages] = useState<LumeoImage[]>([]);
   const [loading, setLoading] = useState(!skipInitialFetch);
   const [error, setError] = useState<Error | null>(null);
@@ -39,8 +46,10 @@ export function useLumeoImages(
     fetchImageList(config)
       .then((images) => {
         if (requestIdRef.current === requestId) {
-          setAllImages(images);
           setLoading(false);
+          // Goes through the shared store (not a direct setAllImages) so every other instance
+          // subscribed to the same list key picks up this fetch too.
+          broadcastListUpdate(listKey, images);
         }
       })
       .catch((err: unknown) => {
@@ -49,7 +58,10 @@ export function useLumeoImages(
           setLoading(false);
         }
       });
-  }, [config]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config, listKey]);
+
+  useEffect(() => subscribeToList(listKey, setAllImages), [listKey]);
 
   useEffect(() => {
     if (!skipInitialFetch) {

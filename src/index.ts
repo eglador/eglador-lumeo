@@ -14,6 +14,8 @@ export type {
   RejectedFile,
   ValidateFilesResult,
   SaveImagePayload,
+  RequiredImageTypesResult,
+  RequiredTypeStatus,
 } from "./types";
 
 export {
@@ -24,6 +26,8 @@ export {
   findImageTypeLabel,
   formatImageTypeMeta,
   formatAspectRatioSlug,
+  checkRequiredImageTypes,
+  formatRequiredEntryLabel,
 } from "./lib/imageTypes";
 export {
   DEFAULT_SIZE_PRESETS,
@@ -46,6 +50,7 @@ export { useLumeoImages } from "./hooks/useLumeoImages";
 export type { UseLumeoImagesOptions, UseLumeoImagesResult } from "./hooks/useLumeoImages";
 export { useSizeSelections } from "./hooks/useSizeSelections";
 export type { UseSizeSelectionsResult } from "./hooks/useSizeSelections";
+export { useRequiredImageTypes } from "./hooks/useRequiredImageTypes";
 
 export { LumeoUploader } from "./components/LumeoUploader/LumeoUploader";
 export type { LumeoUploaderProps } from "./components/LumeoUploader/LumeoUploader";

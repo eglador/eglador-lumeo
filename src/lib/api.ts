@@ -15,6 +15,15 @@ function withIdQuery(url: string, config: LumeoConfig): string {
   return `${url}${separator}${query}`;
 }
 
+/**
+ * The exact `list` URL a given config resolves to (endpoint + `clientId`/`siteId` query params) —
+ * used as the shared cache/subscription key in `useLumeoImages`, so every hook instance pointed
+ * at the same effective list (same endpoint, same ids) stays in sync automatically.
+ */
+export function resolveListKey(config: LumeoConfig): string {
+  return withIdQuery(config.endpoints.list, config);
+}
+
 /** `{ clientId, siteId }` (only the ones that are set) — spread onto a JSON request body. */
 function idFields(config: LumeoConfig): { clientId?: LumeoTypeValue; siteId?: LumeoTypeValue } {
   return {

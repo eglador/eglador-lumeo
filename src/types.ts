@@ -34,6 +34,21 @@ export interface LumeoImageTypeOption {
    * usage type (existing, non-nested behavior — unaffected).
    */
   crops?: LumeoImageTypeOption[];
+  /**
+   * Marks this entry as required for a valid submission — checked across the **whole** image
+   * list via `checkRequiredImageTypes()` / `useRequiredImageTypes()`, not per-image. The package
+   * never blocks anything itself (no HTML `required`, no disabled buttons inside the modal); it
+   * only reports status for your own app to act on, e.g. disabling your save button.
+   *
+   * - On a plain/leaf entry: satisfied once **at least one image, anywhere in the list**, has
+   *   been cropped for this exact type.
+   * - On a group entry (has `crops`): satisfied only once **every one** of the group's children
+   *   has been cropped somewhere in the list — an "all of these" requirement. Mark only some
+   *   individual children `required` instead if you only need that subset covered.
+   *
+   * A group and its children carry `required` fully independently of each other.
+   */
+  required?: boolean;
 }
 
 export interface LumeoImage {
@@ -79,6 +94,38 @@ export interface CropRegion {
   y: number;
   width: number;
   height: number;
+}
+
+/** Per-entry satisfied status for one `required` usage type — see `RequiredImageTypesResult.statuses`. */
+export interface RequiredTypeStatus {
+  option: LumeoImageTypeOption;
+  /** For a leaf: whether its own `value` has a crop anywhere in the list. For a group: whether ALL of `children` are satisfied. */
+  satisfied: boolean;
+  /**
+   * Present only when `option` is a group (has `crops`) — the individual satisfied status of
+   * each of its children, so you can render per-child progress (e.g. "Banner" red, "Kare Reklam"
+   * green) even though the group's own `satisfied` only turns true once every child is. Every
+   * child here has `children` itself undefined (only one level deep — groups aren't nested
+   * more than the `imageTypes` config itself is).
+   */
+  children?: RequiredTypeStatus[];
+  /**
+   * The enclosing group entry `option` was configured inside (e.g. "Kapak" required individually,
+   * but still defined under the "Haberler" group's `crops`) — undefined when `option` sits at the
+   * top level of `imageTypes`. Purely informational, for display (e.g. showing "Haberler: Kapak"
+   * instead of just "Kapak") — doesn't affect `satisfied`.
+   */
+  parent?: LumeoImageTypeOption;
+}
+
+/** Result of `checkRequiredImageTypes()` / `useRequiredImageTypes()` — whether every `required` usage type has a matching crop somewhere in the checked image list. */
+export interface RequiredImageTypesResult {
+  /** `true` once every `required` entry (group or leaf) is satisfied. `true` trivially when nothing is marked `required`. */
+  valid: boolean;
+  /** The `required` entries (group or leaf, as configured) that don't have a matching crop yet. Empty when `valid` is `true`. */
+  missing: LumeoImageTypeOption[];
+  /** Every `required` entry (group or leaf) with its current satisfied status — for rendering a full checklist rather than just what's missing. */
+  statuses: RequiredTypeStatus[];
 }
 
 /** A single concrete output box, either a plain preset's size or one entry nested under a group. */

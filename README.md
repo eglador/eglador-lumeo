@@ -150,6 +150,97 @@ field on the save request (alongside `clientId`, see "cropByUsageType için örn
 If omitted, `imageTypes` and `sizePresets` fall back to a locale-aware built-in default set
 (English by default, Turkish when `locale: "tr"`).
 
+#### Required usage types
+
+`imageTypes[].required: true` marks an entry as required for a valid submission — the package
+itself never blocks anything (no HTML `required`, no disabled buttons inside the modal); it only
+exposes a **read-only status check** so your own app can act on it, e.g. disable your own save
+button until every required type has been covered:
+
+```tsx
+imageTypes: [
+  {
+    name: "News",
+    value: "news",
+    label: "News",
+    // Group-level required: satisfied only once EVERY ONE of its children has been used —
+    // "both Headline and Cover", not just one of them.
+    required: true,
+    crops: [
+      { value: "manset", label: "Headline", aspect: 16 / 9, cropTypeId: 1 },
+      { value: "kapak", label: "Cover", aspect: 4 / 3, cropTypeId: 2 },
+    ],
+  },
+  // Leaf-level required: this exact type specifically must be used.
+  { value: "avatar", label: "Avatar", aspect: 1, cropTypeId: 102, required: true },
+],
+```
+
+Crucially, this is checked **across the whole image list at once, not per image** — from your
+example: 4 images uploaded, 4 different *leaf* types marked `required`, one different required
+type cropped on each of the 4 images → every required type has a match somewhere in the list, so
+the overall check is valid, even though no single image satisfies all 4 by itself.
+
+Use `checkRequiredImageTypes(images, imageTypes)` (a plain function) or the reactive
+`useRequiredImageTypes(images, config)` hook — both exported from the package — outside any Lumeo
+component, typically fed the same `images` your app already gets from `useLumeoImages`. Both
+return `valid`, `missing` (the unsatisfied entries), and `statuses` — **every** `required` entry
+(group or leaf) with its own `satisfied` flag, for rendering a full checklist rather than just an
+overall message. A group status also carries `children`: the satisfied state of each of its
+children individually, so a partially-covered group can show exactly which child is still
+missing (e.g. "Cover" green, "Headline" red) even though the group's own `satisfied` only turns
+`true` once every child does. A leaf required *individually* but still defined inside a group
+(e.g. "Cover" required on its own, but still nested under a "News" group) carries `parent` — the
+enclosing group option — so you can show that same origin, e.g. "News: Cover", for entries that
+aren't themselves group requirements:
+
+```tsx
+import { useLumeoImages, useRequiredImageTypes } from "eglador-lumeo";
+
+function PublishForm({ config }: { config: LumeoConfig }) {
+  const { allImages } = useLumeoImages(config);
+  const { valid, statuses } = useRequiredImageTypes(allImages, config);
+
+  return (
+    <>
+      <ul>
+        {statuses.map((status) => {
+          const prefix = status.children
+            ? (status.option.name ?? status.option.label)
+            : status.parent && (status.parent.name ?? status.parent.label);
+          return (
+            <li key={String(status.option.value)}>
+              {prefix && `${prefix}: `}
+              {status.children ? (
+                status.children.map((child) => (
+                  <span key={String(child.option.value)} style={{ color: child.satisfied ? "green" : "crimson" }}>
+                    {child.option.label}{" "}
+                  </span>
+                ))
+              ) : (
+                <span style={{ color: status.satisfied ? "green" : "crimson" }}>{status.option.label}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" disabled={!valid} onClick={publish}>
+        Publish
+      </button>
+    </>
+  );
+}
+```
+
+Prefer a single plain-text label instead (e.g. for a toast)? `formatRequiredEntryLabel(option)`
+collapses a group and its children into one string, e.g. `"News (Headline, Cover)"`.
+
+No manual refresh needed to keep this current: every `useLumeoImages` instance pointed at the
+same list (same config) shares one live cache, so the moment the package's own
+`LumeoUploader`/`ImageModal` saves a crop internally, this `images` array — and therefore
+`valid`/`missing`/`statuses` — updates automatically (see the `LumeoUploader / CropByUsageTypeDemo`
+story for a live example).
+
 #### Grouped ("nested") size presets
 
 A single `sizePresets` entry can expand to **multiple** output boxes while still appearing as one
@@ -718,6 +809,99 @@ uçtan uca akış"). `name`, grubun butonlarının üzerinde gösterilen başlı
 
 `imageTypes` ve `sizePresets` verilmezse, dile göre (locale) değişen hazır bir varsayılan sete
 düşer (varsayılan olarak İngilizce, `locale: "tr"` verildiğinde Türkçe).
+
+#### Zorunlu kullanım tipleri
+
+`imageTypes[].required: true`, bir girdiyi geçerli bir gönderim için zorunlu olarak işaretler —
+paketin kendisi hiçbir şeyi engellemez (ne HTML `required`, ne modal içinde pasifleşen bir buton);
+sadece **salt okunur bir durum kontrolü** sunar, kendi uygulamanız bunu kullanarak örneğin kendi
+kaydet butonunuzu, tüm zorunlu tipler karşılanana kadar pasif tutabilirsiniz:
+
+```tsx
+imageTypes: [
+  {
+    name: "Haberler",
+    value: "haberler",
+    label: "Haberler",
+    // Grup seviyesinde zorunluluk: çocukların HEPSİ kullanıldığında karşılanır —
+    // "Manşet VE Kapak'ın ikisi de", sadece biri değil.
+    required: true,
+    crops: [
+      { value: "manset", label: "Manşet", aspect: 16 / 9, cropTypeId: 1 },
+      { value: "kapak", label: "Kapak", aspect: 4 / 3, cropTypeId: 2 },
+    ],
+  },
+  // Yaprak (leaf) seviyesinde zorunluluk: özellikle bu tam tip kullanılmış olmalı.
+  { value: "avatar", label: "Avatar", aspect: 1, cropTypeId: 102, required: true },
+],
+```
+
+Önemli nokta: bu kontrol **tüm görsel listesi genelinde bir kerede** yapılır, imaj başına değil —
+sizin örneğinizden gidersek: 4 görsel yüklü, 4 farklı *yaprak* tip `required` olarak işaretli, 4
+görselin her birinde 1'er farklı zorunlu tip kadrajlanmış → her zorunlu tipin listenin bir yerinde
+bir eşleşmesi var, dolayısıyla genel kontrol geçerli (valid) olur — hiçbir tek görsel 4'ünü birden
+karşılamasa bile.
+
+Paketten export edilen `checkRequiredImageTypes(images, imageTypes)` (düz bir fonksiyon) veya
+reaktif `useRequiredImageTypes(images, config)` hook'unu — herhangi bir Lumeo bileşeninin dışında,
+tipik olarak uygulamanızın zaten `useLumeoImages`'tan aldığı aynı `images`'ı vererek — kullanın.
+İkisi de `valid`, `missing` (karşılanmamış girdiler) ve `statuses` döner — **her** `required`
+girdinin (grup ya da yaprak) kendi `satisfied` bayrağıyla, tek bir genel mesaj yerine tam bir
+kontrol listesi çizmek için. Bir grubun durumu ayrıca `children` de taşır: her çocuğun kendi
+`satisfied` durumu, böylece kısmen tamamlanmış bir grupta hangi çocuğun hâlâ eksik olduğunu tam
+olarak gösterebilirsiniz (ör. "Kapak" yeşil, "Manşet" kırmızı) — grubun kendi `satisfied`'ı ise
+sadece tüm çocuklar tamamlanınca `true` olur. Grubun kendisi değil de tek başına (ayrı ayrı)
+zorunlu kılınmış ama yine de bir grubun içinde tanımlı bir yaprak (ör. "Kapak" tek başına zorunlu
+ama yine de "Haberler" grubunun altında tanımlı) `parent` taşır — bu sayede aynı köken bilgisini
+(ör. "Haberler: Kapak") grup olmayan girdiler için de gösterebilirsiniz:
+
+```tsx
+import { useLumeoImages, useRequiredImageTypes } from "eglador-lumeo";
+
+function YayinlaFormu({ config }: { config: LumeoConfig }) {
+  const { allImages } = useLumeoImages(config);
+  const { valid, statuses } = useRequiredImageTypes(allImages, config);
+
+  return (
+    <>
+      <ul>
+        {statuses.map((status) => {
+          const prefix = status.children
+            ? (status.option.name ?? status.option.label)
+            : status.parent && (status.parent.name ?? status.parent.label);
+          return (
+            <li key={String(status.option.value)}>
+              {prefix && `${prefix}: `}
+              {status.children ? (
+                status.children.map((child) => (
+                  <span key={String(child.option.value)} style={{ color: child.satisfied ? "green" : "crimson" }}>
+                    {child.option.label}{" "}
+                  </span>
+                ))
+              ) : (
+                <span style={{ color: status.satisfied ? "green" : "crimson" }}>{status.option.label}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" disabled={!valid} onClick={yayinla}>
+        Yayınla
+      </button>
+    </>
+  );
+}
+```
+
+Bunun yerine tek bir düz metin etiketi mi tercih edersiniz (ör. bir toast için)?
+`formatRequiredEntryLabel(option)`, bir grubu ve çocuklarını tek bir dizede birleştirir, ör.
+`"Haberler (Manşet, Kapak)"`.
+
+Bunu güncel tutmak için elle yenileme gerekmez: aynı listeye (aynı config'e) bakan her
+`useLumeoImages` çağrısı tek bir canlı önbelleği paylaşır, dolayısıyla paketin kendi
+`LumeoUploader`/`ImageModal`'ı içeride bir kadraj kaydettiği an bu `images` dizisi — ve dolayısıyla
+`valid`/`missing`/`statuses` — otomatik güncellenir (canlı bir örnek için
+`LumeoUploader / CropByUsageTypeDemo` story'sine bakabilirsiniz).
 
 #### Gruplanmış ("iç içe") boyut seçenekleri
 
