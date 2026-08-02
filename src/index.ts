@@ -66,3 +66,6 @@ export type {
   LumeoMiniViewerProps,
   LumeoMiniViewerDragConfig,
 } from "./components/MiniViewer/LumeoMiniViewer";
+
+export { LumeoRequiredStatus } from "./components/RequiredStatus/LumeoRequiredStatus";
+export type { LumeoRequiredStatusProps } from "./components/RequiredStatus/LumeoRequiredStatus";

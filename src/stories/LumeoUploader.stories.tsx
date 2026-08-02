@@ -6,9 +6,8 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { LumeoUploader } from "../components/LumeoUploader/LumeoUploader";
 import { LumeoMiniViewer } from "../components/MiniViewer/LumeoMiniViewer";
+import { LumeoRequiredStatus } from "../components/RequiredStatus/LumeoRequiredStatus";
 import { LumeoProvider } from "../context/LumeoProvider";
-import { useLumeoImages } from "../hooks/useLumeoImages";
-import { useRequiredImageTypes } from "../hooks/useRequiredImageTypes";
 import { handlers, slowHandlers } from "../mocks/handlers";
 import { ImageNode } from "./lexical/ImageNode";
 import { ImageObjectDropPlugin } from "./lexical/ImageObjectDropPlugin";
@@ -114,74 +113,10 @@ const cropDemoLexicalConfig = {
   nodes: [ImageNode],
 };
 
-function RequiredDot({ label, satisfied }: { label: string; satisfied: boolean }) {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: satisfied ? "#166534" : "#991b1b" }}>
-      <span
-        style={{ width: 6, height: 6, borderRadius: "50%", background: satisfied ? "#22c55e" : "#ef4444", flexShrink: 0 }}
-      />
-      {label}
-    </span>
-  );
-}
-
-/**
- * Shows how a host app gates its own UI (e.g. a save button) on `useRequiredImageTypes`, entirely
- * outside the package's own modal/buttons — it just reads `images` from `useLumeoImages` (already
- * public API) and renders `statuses` (every `required` entry with its own satisfied flag, not
- * just an overall message) as a minimal checklist. A group entry (e.g. "Reklam") is one thin pill
- * with the group's name plus every child (`status.children`) as its own independently colored
- * dot+label. A leaf required individually but still defined inside a group (e.g. "Kapak" inside
- * "Haberler") uses `status.parent` to show that same group-name prefix, e.g. "Haberler: Kapak" —
- * so every entry's origin is visually clear, group or not. This panel's `useLumeoImages` instance
- * shares its cache with `LumeoUploader`'s own internal one (same config → same list key), so it
- * updates automatically the moment a crop is saved inside the modal — no manual refresh.
- */
-function RequiredStatusPanel({ config }: { config: LumeoConfig }) {
-  const { allImages } = useLumeoImages(config);
-  const { statuses } = useRequiredImageTypes(allImages, config);
-  return (
-    <div style={{ padding: "8px 10px", borderRadius: 6, background: "#fafafa" }}>
-      <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", color: "#a1a1aa" }}>
-        Zorunlu Kadrajlar
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {statuses.map((status) => {
-          const prefix = status.children
-            ? (status.option.name ?? status.option.label)
-            : status.parent && (status.parent.name ?? status.parent.label);
-          return (
-            <span
-              key={String(status.option.value)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "3px 9px",
-                borderRadius: 999,
-                border: `1px solid ${status.satisfied ? "#86efac" : "#e4e4e7"}`,
-              }}
-            >
-              {prefix && <span style={{ fontSize: 12, fontWeight: 600, color: "#71717a" }}>{prefix}:</span>}
-              {status.children ? (
-                status.children.map((child) => (
-                  <RequiredDot key={String(child.option.value)} label={child.option.label} satisfied={child.satisfied} />
-                ))
-              ) : (
-                <RequiredDot label={status.option.label} satisfied={status.satisfied} />
-              )}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function CropByUsageTypeUploaderHarness({ config }: { config: LumeoConfig }) {
+function CropByUsageTypeUploaderHarness() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, padding: 24 }}>
-      <RequiredStatusPanel config={config} />
+      <LumeoRequiredStatus />
       <LumeoUploader cropByUsageType />
 
       <div>
@@ -241,7 +176,7 @@ export const CropByUsageTypeDemo: Story = {
   name: "Uçtan uca: yükle + waitForSuccess: true + cropByUsageType modal + MiniViewer + Lexical",
   render: () => (
     <LumeoProvider config={cropByUsageTypeConfig}>
-      <CropByUsageTypeUploaderHarness config={cropByUsageTypeConfig} />
+      <CropByUsageTypeUploaderHarness />
     </LumeoProvider>
   ),
   parameters: {
@@ -250,7 +185,7 @@ export const CropByUsageTypeDemo: Story = {
     docs: {
       description: {
         story:
-          "Bir görsel yükleyin (`waitForSuccess: true` olduğu için üstte yükleme çubuğu görünür), listeden açın: modal doğrudan `cropByUsageType` modunda açılır — kullanım tipine tıklamak o oranda bir kırpma alanı oluşturur ve üstüne gelince küçük bir önizleme gösterir, Kaydet'e basınca kırpmalar görselin kendi `crops` alanına kaydedilir (yeni bir liste satırı oluşmaz). Bu örnekte `imageTypes` gruplu verilmiş: \"Haberler\" (Manşet, Kapak) ve \"Reklam\" (Banner, Kare Reklam) birer başlık altında toplanmış görünür, \"Galeri Görseli\" ise gruplanmamış düz bir seçenek olarak yanlarında kalır — Kaydet'e basınca, kırpılan tip bir grubun içindeyse istek gövdesine `clientId` ile aynı seviyede grubun `value`'sunu taşıyan bir `typeId` alanı da eklenir. Üstteki ayrı başlıklı \"Zorunlu Kadrajlar\" paneli, `required: true` verilen her tipi minimal rozetler olarak listeler (`useRequiredImageTypes(...).statuses`, sadece genel bir mesaj değil): \"Reklam\" grubun TÜM çocukları (Banner VE Kare Reklam) kullanılınca tamamlanmış sayılan bir gerekliliktir, rozetin içinde her çocuk (`status.children`) kendi noktasıyla ayrı ayrı renklenir — yalnızca \"Kare Reklam\" kadrajlanırsa o nokta tek başına yeşile döner, \"Banner\" kırmızı kalır. \"Kapak\" ise tek başına (ayrı ayrı) zorunlu ama yine de \"Haberler\" grubunun içinde tanımlı — `status.parent` sayesinde rozeti \"Haberler: Kapak\" şeklinde, o grubun altından geldiğini göstererek çiziyoruz. Bu tamamen pakete özel modalin dışında, host uygulamanın kendi kaydet butonunu aç/kapat etmek için kullanabileceği bir örnektir (panel kendi `useLumeoImages` kopyasını tutar ama aynı config'i kullanan her `useLumeoImages` çağrısı artık tek bir paylaşımlı listeyi izler — modalde bir kaydetme olduğu an panel otomatik güncellenir, elle yenilemeye gerek yoktur). Sağ altta başlangıçta küçültülmüş (`defaultCollapsed`) ve sürüklenebilir bir `LumeoMiniViewer` de var; açıp bir görseli alttaki Lexical editörüne sürükleyip bırakırsanız görselin tüm bilgileriyle (id, dosya adı, boyutlar, tip vb. — sadece `url` değil) gerçek bir görsel nesnesi olarak eklenir (`ImageNode` + `ImageObjectDropPlugin`, `src/stories/lexical/`). Editörde kalın/italik/altı çizili/üstü çizili için bir araç çubuğu (`ToolbarPlugin`) ve altında editör durumunun canlı JSON çıktısını gösteren bir panel (`JsonOutputPlugin`) var — bıraktığınız görselin tüm alanlarını orada, düğümün kendi `image` anahtarı altında görebilirsiniz.",
+          "Bir görsel yükleyin (`waitForSuccess: true` olduğu için üstte yükleme çubuğu görünür), listeden açın: modal doğrudan `cropByUsageType` modunda açılır — kullanım tipine tıklamak o oranda bir kırpma alanı oluşturur ve üstüne gelince küçük bir önizleme gösterir, Kaydet'e basınca kırpmalar görselin kendi `crops` alanına kaydedilir (yeni bir liste satırı oluşmaz). Bu örnekte `imageTypes` gruplu verilmiş: \"Haberler\" (Manşet, Kapak) ve \"Reklam\" (Banner, Kare Reklam) birer başlık altında toplanmış görünür, \"Galeri Görseli\" ise gruplanmamış düz bir seçenek olarak yanlarında kalır — Kaydet'e basınca, kırpılan tip bir grubun içindeyse istek gövdesine `clientId` ile aynı seviyede grubun `value`'sunu taşıyan bir `typeId` alanı da eklenir. Üstteki panel, paketin kendi export ettiği `LumeoRequiredStatus` bileşenidir — tek başına `<LumeoRequiredStatus />` yazılarak eklendi, `imageTypes`'ta `required: true` verilen her tipi minimal rozetler olarak listeler (hiçbir tip `required` değilse hiçbir şey render etmez): \"Reklam\" grubun TÜM çocukları (Banner VE Kare Reklam) kullanılınca tamamlanmış sayılan bir gerekliliktir, rozetin içinde her çocuk kendi noktasıyla ayrı ayrı renklenir — yalnızca \"Kare Reklam\" kadrajlanırsa o nokta tek başına yeşile döner, \"Banner\" kırmızı kalır. \"Kapak\" ise tek başına (ayrı ayrı) zorunlu ama yine de \"Haberler\" grubunun içinde tanımlı — rozeti \"Haberler: Kapak\" şeklinde, o grubun altından geldiğini göstererek çizer. `LumeoRequiredStatus`, `LumeoUploader`'ın kendi iç listesiyle aynı paylaşımlı `useLumeoImages` önbelleğini okur, bu yüzden modalde bir kaydetme olduğu an otomatik güncellenir — elle yenilemeye gerek yoktur; host uygulamanın kendi kaydet butonunu aç/kapat etmek için `useRequiredImageTypes`'ı doğrudan kullanmak isterse o da ayrıca export edilmiştir. Sağ altta başlangıçta küçültülmüş (`defaultCollapsed`) ve sürüklenebilir bir `LumeoMiniViewer` de var; açıp bir görseli alttaki Lexical editörüne sürükleyip bırakırsanız görselin tüm bilgileriyle (id, dosya adı, boyutlar, tip vb. — sadece `url` değil) gerçek bir görsel nesnesi olarak eklenir (`ImageNode` + `ImageObjectDropPlugin`, `src/stories/lexical/`). Editörde kalın/italik/altı çizili/üstü çizili için bir araç çubuğu (`ToolbarPlugin`) ve altında editör durumunun canlı JSON çıktısını gösteren bir panel (`JsonOutputPlugin`) var — bıraktığınız görselin tüm alanlarını orada, düğümün kendi `image` anahtarı altında görebilirsiniz.",
       },
     },
   },

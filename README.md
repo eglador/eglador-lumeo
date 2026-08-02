@@ -181,9 +181,27 @@ example: 4 images uploaded, 4 different *leaf* types marked `required`, one diff
 type cropped on each of the 4 images → every required type has a match somewhere in the list, so
 the overall check is valid, even though no single image satisfies all 4 by itself.
 
-Use `checkRequiredImageTypes(images, imageTypes)` (a plain function) or the reactive
-`useRequiredImageTypes(images, config)` hook — both exported from the package — outside any Lumeo
-component, typically fed the same `images` your app already gets from `useLumeoImages`. Both
+**Ready-made display — `<LumeoRequiredStatus />`:** a drop-in component that renders a minimal
+checklist of every `required` entry (colored per-child for groups, prefixed with the enclosing
+group's name for an individually-required leaf) — and renders **nothing at all** when nothing in
+`imageTypes` is marked `required`. Place it anywhere inside a `LumeoProvider`, it doesn't need to
+be near `LumeoUploader`:
+
+```tsx
+import { LumeoRequiredStatus } from "eglador-lumeo";
+
+<LumeoRequiredStatus />
+```
+
+It reads images through the same shared `useLumeoImages` cache as `LumeoUploader`/`ImageModal`, so
+it updates automatically the instant a crop is saved anywhere in your app — no wiring required.
+See it live in the `LumeoUploader / CropByUsageTypeDemo` story.
+
+**Build your own:** use `checkRequiredImageTypes(images, imageTypes)` (a plain function) or the
+reactive `useRequiredImageTypes(images, config)` hook — both exported from the package — outside
+any Lumeo component, typically fed the same `images` your app already gets from `useLumeoImages`,
+if you need a save button gated on `valid` or a custom look `LumeoRequiredStatus` doesn't cover.
+Both
 return `valid`, `missing` (the unsatisfied entries), and `statuses` — **every** `required` entry
 (group or leaf) with its own `satisfied` flag, for rendering a full checklist rather than just an
 overall message. A group status also carries `children`: the satisfied state of each of its
@@ -842,10 +860,27 @@ görselin her birinde 1'er farklı zorunlu tip kadrajlanmış → her zorunlu ti
 bir eşleşmesi var, dolayısıyla genel kontrol geçerli (valid) olur — hiçbir tek görsel 4'ünü birden
 karşılamasa bile.
 
-Paketten export edilen `checkRequiredImageTypes(images, imageTypes)` (düz bir fonksiyon) veya
-reaktif `useRequiredImageTypes(images, config)` hook'unu — herhangi bir Lumeo bileşeninin dışında,
-tipik olarak uygulamanızın zaten `useLumeoImages`'tan aldığı aynı `images`'ı vererek — kullanın.
-İkisi de `valid`, `missing` (karşılanmamış girdiler) ve `statuses` döner — **her** `required`
+**Hazır görüntüleme — `<LumeoRequiredStatus />`:** her `required` girdiyi minimal bir kontrol
+listesi olarak render eden hazır bir bileşen (gruplarda her çocuk ayrı renklenir, tek başına
+zorunlu ama bir grubun içindeki bir yaprak o grubun adıyla önceden gösterilir) — `imageTypes`'ta
+hiçbir şey `required` değilse **hiçbir şey render etmez**. Herhangi bir `LumeoProvider`'ın içine
+yerleştirin, `LumeoUploader`'a yakın olması gerekmez:
+
+```tsx
+import { LumeoRequiredStatus } from "eglador-lumeo";
+
+<LumeoRequiredStatus />
+```
+
+`LumeoUploader`/`ImageModal` ile aynı paylaşımlı `useLumeoImages` önbelleğini okur, bu yüzden
+uygulamanızın herhangi bir yerinde bir kadraj kaydedildiği an otomatik güncellenir — ayrıca
+kablolama gerekmez. Canlı örneği `LumeoUploader / CropByUsageTypeDemo` story'sinde görebilirsiniz.
+
+**Kendi tasarımınızı yapın:** paketten export edilen `checkRequiredImageTypes(images, imageTypes)`
+(düz bir fonksiyon) veya reaktif `useRequiredImageTypes(images, config)` hook'unu — herhangi bir
+Lumeo bileşeninin dışında, tipik olarak uygulamanızın zaten `useLumeoImages`'tan aldığı aynı
+`images`'ı vererek — `valid`'e bağlı bir kaydet butonu veya `LumeoRequiredStatus`'un kapsamadığı
+özel bir görünüm isterseniz kullanın. İkisi de `valid`, `missing` (karşılanmamış girdiler) ve `statuses` döner — **her** `required`
 girdinin (grup ya da yaprak) kendi `satisfied` bayrağıyla, tek bir genel mesaj yerine tam bir
 kontrol listesi çizmek için. Bir grubun durumu ayrıca `children` de taşır: her çocuğun kendi
 `satisfied` durumu, böylece kısmen tamamlanmış bir grupta hangi çocuğun hâlâ eksik olduğunu tam

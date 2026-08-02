@@ -51,6 +51,7 @@ export interface LumeoMessages {
   confirmDeleteMessage: string;
   confirmSaveTitle: string;
   confirmSaveMessage: string;
+  requiredCropsTitle: string;
 }
 
 const en: LumeoMessages = {
@@ -105,6 +106,7 @@ const en: LumeoMessages = {
   confirmDeleteMessage: "This action cannot be undone.",
   confirmSaveTitle: "Save changes?",
   confirmSaveMessage: "This will update the image right away.",
+  requiredCropsTitle: "Required Crops",
 };
 
 const tr: LumeoMessages = {
@@ -159,6 +161,7 @@ const tr: LumeoMessages = {
   confirmDeleteMessage: "Bu işlem geri alınamaz.",
   confirmSaveTitle: "Değişiklikler kaydedilsin mi?",
   confirmSaveMessage: "Görsel hemen güncellenecek.",
+  requiredCropsTitle: "Zorunlu Kadrajlar",
 };
 
 const MESSAGES: Record<LumeoLocale, LumeoMessages> = { en, tr };
