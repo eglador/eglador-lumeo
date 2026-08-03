@@ -4,14 +4,4 @@ storybook-static
 *.log
 .DS_Store
 .claude
-screenshots/nested-toggle-active.png
-screenshots/nested-types-modal.png
-screenshots/required-checklist-final.png
-screenshots/required-panel-autosync.png
-screenshots/required-panel-final.png
-screenshots/required-perchild.png
-screenshots/required-redesign-1-initial.png
-screenshots/required-redesign-2-partial.png
-screenshots/required-redesign-3-complete.png
-screenshots/color-backfill.png
-screenshots/croptypeid-match.png
+screenshots
