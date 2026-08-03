@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { formatImageTypeMeta, imageTypeKey, segmentImageTypes } from "../../../lib/imageTypes";
+import { formatImageTypeMeta, imageTypeKey, segmentImageTypes, regionMatchesOption } from "../../../lib/imageTypes";
 import type { Bounds } from "../../../lib/geometry";
 import type { CropRegion, LumeoImageTypeOption } from "../../../types";
 
@@ -27,7 +27,7 @@ function TypeCropButton({
   naturalSize: Bounds;
   onToggle: (option: LumeoImageTypeOption) => void;
 }) {
-  const region = regions.find((candidate) => candidate.type === option.value);
+  const region = regions.find((candidate) => regionMatchesOption(candidate, option));
   const active = Boolean(region);
   const meta = formatImageTypeMeta(option);
   const canPreview = Boolean(region) && naturalSize.width > 0 && naturalSize.height > 0;

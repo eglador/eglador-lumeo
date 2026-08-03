@@ -5,6 +5,7 @@ import type {
   LumeoTypeValue,
   RequiredImageTypesResult,
   RequiredTypeStatus,
+  CropRegion,
 } from "../types";
 import { resolveLocale } from "./i18n";
 
@@ -35,6 +36,19 @@ export function resolveImageTypes(
 ): LumeoImageTypeOption[] {
   if (configured && configured.length > 0) return configured;
   return resolveLocale(locale) === "tr" ? DEFAULT_IMAGE_TYPES_TR : DEFAULT_IMAGE_TYPES_EN;
+}
+
+/**
+ * Whether a saved crop region was seeded from a given usage-type option — prefers matching by
+ * `cropTypeId` (the stable backend identifier) when both sides have one configured, since a
+ * backend id survives a `value`/slug rename; falls back to the slug-like `type`/`value` otherwise.
+ * Used to decide whether a type button should show as already-active (green/checked) for a region.
+ */
+export function regionMatchesOption(region: CropRegion, option: LumeoImageTypeOption): boolean {
+  if (region.cropTypeId !== undefined && option.cropTypeId !== undefined) {
+    return region.cropTypeId === option.cropTypeId;
+  }
+  return region.type === option.value;
 }
 
 /** Stable React list key for a usage-type option — combines `value` with `cropTypeId` (when set) so options that might otherwise share the same `value` don't collide. */
@@ -117,15 +131,13 @@ export function segmentImageTypes(options: LumeoImageTypeOption[]): ImageTypeSeg
 }
 
 /**
- * Human readable labels for the crops already saved on an image — the usage type's label when a
- * crop carries one (`cropByUsageType` flow), otherwise the crop's own name (manual/custom crops).
- * Empty array when the image hasn't been cropped yet.
+ * Human readable labels for the crops already saved on an image — always the crop's own `name`
+ * (set once at creation time: the usage type's label for a `cropByUsageType` crop, or a generated
+ * "Crop N" for a manual one). Empty array when the image hasn't been cropped yet.
  */
-export function resolveCropLabels(image: LumeoImage, imageTypes: LumeoImageTypeOption[]): string[] {
+export function resolveCropLabels(image: LumeoImage): string[] {
   if (!image.crops || image.crops.length === 0) return [];
-  return image.crops.map((crop) =>
-    crop.type !== undefined ? (findImageTypeLabel(crop.type, imageTypes) ?? String(crop.type)) : crop.name
-  );
+  return image.crops.map((crop) => crop.name);
 }
 
 /** Every distinct crop `type` value used anywhere across `images`, normalized to strings so numeric and string-typed `value`s compare consistently. */

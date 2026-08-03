@@ -87,7 +87,11 @@ export interface CropRegion {
   type?: LumeoTypeValue;
   /** `LumeoImageTypeOption.cropTypeId` for the usage type this crop was seeded from, if one was configured. Undefined for manual crops or types without a `cropTypeId`. */
   cropTypeId?: string | number;
-  /** Hex color used to draw this region's outline and its list dot. Assigned once at creation. */
+  /**
+   * Hex color used to draw this region's outline and its list dot. Assigned once at creation and
+   * sent back on save — purely a display hint, so it's fine if your backend doesn't persist it:
+   * `useCropRegions` regenerates a color for any region that comes back from the API without one.
+   */
   color: string;
   /** All coordinates are in the original image's natural pixel space. */
   x: number;

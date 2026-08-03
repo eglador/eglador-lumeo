@@ -27,7 +27,7 @@ export function GridView({ images, imageTypes, onSelectImage }: GridViewProps) {
           />
           <div className="lumeo:absolute lumeo:bottom-1.5 lumeo:left-1.5 lumeo:flex lumeo:flex-wrap lumeo:gap-1">
             <TypeBadge type={image.type} imageTypes={imageTypes} />
-            {resolveCropLabels(image, imageTypes).map((label, index) => (
+            {resolveCropLabels(image).map((label, index) => (
               <span
                 key={`${label}-${index}`}
                 className={`${tagOutline} lumeo:flex lumeo:items-center lumeo:gap-0.5 lumeo:bg-white/90`}

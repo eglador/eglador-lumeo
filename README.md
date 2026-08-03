@@ -1304,6 +1304,10 @@ verebileceğiniz bir referanstır. Kadraj (`crops`) burada ayrı bir dosya deği
 üzerindeki bir alandır; görsel tekrar açıldığında aynı kadrajlar geri gelir, listede de her zaman
 tek bir satır olarak kalır.
 
+> `crops[].color` sadece görsel bir ipucudur (kadraj çerçevesinin/liste noktasının rengi) —
+> backend'iniz bu alanı saklamasa/geri döndürmese de sorun değil: paket, `color` alanı olmadan
+> gelen her kadraj için otomatik yeni bir renk üretir, hiçbir şey kırılmaz.
+
 **1) Yükleme — `POST` `endpoints.upload`**
 
 ```

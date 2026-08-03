@@ -5,7 +5,7 @@ import { TypeCropSelector } from "./TypeCropSelector";
 import { CropRegionChips } from "./CropRegionChips";
 import { pickRegionColor } from "./colors";
 import { centeredRectForAspect, centeredRectForSize, maxRectForAspect, roundRect, roundAspect } from "../../../lib/geometry";
-import { formatAspectRatioSlug } from "../../../lib/imageTypes";
+import { formatAspectRatioSlug, regionMatchesOption } from "../../../lib/imageTypes";
 import type { Bounds } from "../../../lib/geometry";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
 import type { LumeoImage, LumeoImageTypeOption } from "../../../types";
@@ -48,7 +48,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
   };
 
   const toggleTypeCrop = (option: LumeoImageTypeOption) => {
-    const existing = regionsApi.regions.find((region) => region.type === option.value);
+    const existing = regionsApi.regions.find((region) => regionMatchesOption(region, option));
     if (existing) {
       regionsApi.removeRegion(existing.id);
       return;

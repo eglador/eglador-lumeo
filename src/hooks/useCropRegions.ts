@@ -1,5 +1,21 @@
 import { useCallback, useState } from "react";
+import { pickRegionColor } from "../components/ImageModal/CropStudio/colors";
 import type { CropRegion } from "../types";
+
+/**
+ * Backfills a color for any region missing one — e.g. crops loaded back from an API that doesn't
+ * round-trip `color` (some backends only persist geometry/type, not this purely visual hint).
+ * Picks against colors already assigned earlier in the same batch so hydrated regions stay as
+ * distinguishable from each other as freshly created ones.
+ */
+function withColors(regions: CropRegion[]): CropRegion[] {
+  const used: string[] = [];
+  return regions.map((region) => {
+    const color = region.color || pickRegionColor(used);
+    used.push(color);
+    return region.color ? region : { ...region, color };
+  });
+}
 
 export interface UseCropRegionsResult {
   regions: CropRegion[];
@@ -14,7 +30,7 @@ export interface UseCropRegionsResult {
 
 /** Manages the list of named crop regions for a single image and which one is active/editable. */
 export function useCropRegions(initial: CropRegion[] = []): UseCropRegionsResult {
-  const [regions, setRegions] = useState<CropRegion[]>(initial);
+  const [regions, setRegions] = useState<CropRegion[]>(() => withColors(initial));
   const [activeRegionId, setActiveRegionId] = useState<string | null>(initial[0]?.id ?? null);
 
   const addRegion = useCallback((region: CropRegion) => {

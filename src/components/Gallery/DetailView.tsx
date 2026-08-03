@@ -41,7 +41,7 @@ export function DetailView({ images, imageTypes, onSelectImage, locale }: Detail
               <span className="lumeo:flex lumeo:items-center lumeo:gap-1">
                 <Calendar size={11} /> {formatDate(image.uploadedAt, dateLocale)}
               </span>
-              {resolveCropLabels(image, imageTypes).map((label, index) => (
+              {resolveCropLabels(image).map((label, index) => (
                 <span key={`${label}-${index}`} className="lumeo:flex lumeo:items-center lumeo:gap-1">
                   <Crop size={11} /> {label}
                 </span>
