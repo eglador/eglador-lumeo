@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { Images, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useLumeoImages } from "../../hooks/useLumeoImages";
-import { resolveImageTypes, findImageTypeLabel, imageTypeKey } from "../../lib/imageTypes";
+import { resolveImageTypes, imageTypeKey } from "../../lib/imageTypes";
 import { getMessages } from "../../lib/i18n";
 import { panel, iconButton, inputBase } from "../../styles/editorial";
 import type { LumeoImage } from "../../types";
@@ -231,55 +231,33 @@ export function LumeoMiniViewer({
                 {messages.noImages}
               </p>
             ) : (
-              images.map((image) => {
-                const typeLabel =
-                  image.type !== undefined ? (findImageTypeLabel(image.type, imageTypes) ?? String(image.type)) : undefined;
-                return (
-                  <button
-                    key={image.id}
-                    type="button"
-                    onClick={() => onImageClick(image)}
-                    draggable={Boolean(dragData)}
-                    onDragStart={
-                      dragData
-                        ? (event) => {
-                            event.dataTransfer.setData(
-                              dragData.format ?? "text/plain",
-                              buildDragPayload(image, dragData)
-                            );
-                            event.dataTransfer.effectAllowed = "copy";
-                          }
-                        : undefined
-                    }
-                    className="lumeo:group lumeo:relative lumeo:aspect-square lumeo:p-0 lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:transition-transform"
-                  >
-                    <img
-                      src={image.url}
-                      alt={image.fileName}
-                      draggable={false}
-                      className="lumeo:h-full lumeo:w-full lumeo:object-cover"
-                    />
-                    <div className="lumeo:absolute lumeo:inset-x-0 lumeo:bottom-0 lumeo:flex lumeo:flex-col lumeo:items-start lumeo:gap-0.5 lumeo:bg-linear-to-t lumeo:from-black/80 lumeo:to-transparent lumeo:px-1 lumeo:pt-3 lumeo:pb-1">
-                      {typeLabel && (
-                        <span className="lumeo:max-w-full lumeo:truncate lumeo:rounded-xs lumeo:bg-zinc-900/90 lumeo:px-1 lumeo:text-[8px] lumeo:leading-3.5 lumeo:font-medium lumeo:text-white">
-                          {typeLabel}
-                        </span>
-                      )}
-                      {image.width && image.height && (
-                        <span className="lumeo:text-[8px] lumeo:leading-2.5 lumeo:font-medium lumeo:text-white/90">
-                          {image.width}×{image.height}
-                        </span>
-                      )}
-                      <span
-                        className="lumeo:w-full lumeo:truncate lumeo:text-[8px] lumeo:leading-2.5 lumeo:text-white/70"
-                        title={image.id}
-                      >
-                        {image.id}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })
+              images.map((image) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => onImageClick(image)}
+                  draggable={Boolean(dragData)}
+                  onDragStart={
+                    dragData
+                      ? (event) => {
+                          event.dataTransfer.setData(
+                            dragData.format ?? "text/plain",
+                            buildDragPayload(image, dragData)
+                          );
+                          event.dataTransfer.effectAllowed = "copy";
+                        }
+                      : undefined
+                  }
+                  className="lumeo:group lumeo:relative lumeo:aspect-square lumeo:p-0 lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:transition-transform"
+                >
+                  <img
+                    src={image.url}
+                    alt={image.fileName}
+                    draggable={false}
+                    className="lumeo:h-full lumeo:w-full lumeo:object-cover"
+                  />
+                </button>
+              ))
             )}
           </div>
         </div>

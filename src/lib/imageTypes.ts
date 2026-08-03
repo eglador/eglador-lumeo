@@ -128,6 +128,18 @@ export function findImageTypeLabel(
   return flattenImageTypes(options).find((option) => option.value === value)?.label;
 }
 
+/**
+ * Whether an image is tagged with a given usage-type option — either via its own top-level `type`
+ * field (classic single-tag flow) or via any of its `crops[]` (`cropByUsageType` flow, matched the
+ * same `cropTypeId`-first way as everywhere else, see `regionMatchesOption`). An image saved
+ * through `cropByUsageType` never gets a top-level `type` at all — only its crops carry one — so
+ * filtering by `image.type` alone misses it entirely; this checks both places.
+ */
+export function imageMatchesType(image: LumeoImage, option: LumeoImageTypeOption): boolean {
+  if (image.type !== undefined && String(image.type) === String(option.value)) return true;
+  return (image.crops ?? []).some((crop) => regionMatchesOption(crop, option));
+}
+
 /** A visual segment for rendering usage-type options: either a group (heading + nested children) or a run of consecutive plain options that should flow/wrap together as one row. */
 export type ImageTypeSegment =
   | { kind: "group"; option: LumeoImageTypeOption }

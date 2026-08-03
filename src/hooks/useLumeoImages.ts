@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchImageList, resolveListKey } from "../lib/api";
 import { subscribeToList, broadcastListUpdate } from "../lib/listStore";
+import { resolveImageTypes, flattenImageTypes, imageMatchesType } from "../lib/imageTypes";
 import type { LumeoConfig, LumeoImage, LumeoTypeValue } from "../types";
 
 export interface UseLumeoImagesOptions {
-  /** Filter the returned `images` array to a single usage type. `allImages` is always unfiltered. */
+  /**
+   * Filter the returned `images` array to a single usage type — matches either the image's own
+   * `type` field (classic single-tag flow) or, for a `cropByUsageType`-tagged image, any of its
+   * `crops[]` for this type (see `imageMatchesType`). `allImages` is always unfiltered.
+   */
   type?: LumeoTypeValue;
   /** Skip the automatic fetch on mount; call `refetch()` manually instead. */
   skipInitialFetch?: boolean;
@@ -71,10 +76,18 @@ export function useLumeoImages(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.endpoints.list]);
 
-  // Compared as strings: a native `<select>`'s value is always a string even when the configured
-  // `value`/`type` is numeric, so a strict `===` would otherwise never match a numeric type.
-  const images =
-    type !== undefined ? allImages.filter((image) => image.type !== undefined && String(image.type) === String(type)) : allImages;
+  let images = allImages;
+  if (type !== undefined) {
+    // Resolve the raw filter value (a native `<select>`'s value is always a string, even when the
+    // configured `value`/`type` is numeric) back to its full option, so cropByUsageType-tagged
+    // images can be matched via `cropTypeId` too, not just the classic top-level `type` field.
+    const leaves = flattenImageTypes(resolveImageTypes(config.imageTypes, config.locale));
+    const option = leaves.find((candidate) => String(candidate.value) === String(type)) ?? {
+      value: type,
+      label: String(type),
+    };
+    images = allImages.filter((image) => imageMatchesType(image, option));
+  }
 
   return { images, allImages, loading, error, refetch };
 }
