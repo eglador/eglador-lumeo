@@ -32,7 +32,6 @@ export interface UseCropRegionsResult {
   addRegion: (region: CropRegion) => void;
   removeRegion: (id: string) => void;
   updateRegion: (id: string, patch: Partial<Omit<CropRegion, "id">>) => void;
-  renameRegion: (id: string, name: string) => void;
 }
 
 /** Manages the list of named crop regions for a single image and which one is active/editable. */
@@ -57,11 +56,6 @@ export function useCropRegions(initial: CropRegion[] = []): UseCropRegionsResult
     setRegions((prev) => prev.map((region) => (region.id === id ? { ...region, ...patch } : region)));
   }, []);
 
-  const renameRegion = useCallback(
-    (id: string, name: string) => updateRegion(id, { name }),
-    [updateRegion]
-  );
-
   const activeRegion = regions.find((region) => region.id === activeRegionId);
 
   return {
@@ -72,6 +66,5 @@ export function useCropRegions(initial: CropRegion[] = []): UseCropRegionsResult
     addRegion,
     removeRegion,
     updateRegion,
-    renameRegion,
   };
 }

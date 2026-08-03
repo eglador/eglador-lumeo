@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { X } from "lucide-react";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
 import type { LumeoMessages } from "../../../lib/i18n";
@@ -9,8 +8,6 @@ export interface CropRegionChipsProps {
 }
 
 export function CropRegionChips({ regionsApi, messages }: CropRegionChipsProps) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-
   if (regionsApi.regions.length === 0) {
     return <p className="lumeo:text-xs lumeo:text-zinc-400">{messages.noCropRegions}</p>;
   }
@@ -28,29 +25,13 @@ export function CropRegionChips({ regionsApi, messages }: CropRegionChipsProps) 
             className="lumeo:h-2.5 lumeo:w-2.5 lumeo:shrink-0 lumeo:rounded-full"
             style={{ backgroundColor: region.color }}
           />
-          {editingId === region.id ? (
-            <input
-              autoFocus
-              defaultValue={region.name}
-              onBlur={(event) => {
-                regionsApi.renameRegion(region.id, event.target.value || region.name);
-                setEditingId(null);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") (event.target as HTMLInputElement).blur();
-              }}
-              className="lumeo:min-w-0 lumeo:flex-1 lumeo:rounded-sm lumeo:border lumeo:border-zinc-300 lumeo:px-1 lumeo:text-xs"
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => regionsApi.setActiveRegionId(region.id)}
-              onDoubleClick={() => setEditingId(region.id)}
-              className="lumeo:min-w-0 lumeo:flex-1 lumeo:truncate lumeo:text-left lumeo:text-xs lumeo:font-medium lumeo:text-zinc-700"
-            >
-              {region.name} <span className="lumeo:text-zinc-400">· {region.aspectLabel}</span>
-            </button>
-          )}
+          <input
+            readOnly
+            value={region.name}
+            onClick={() => regionsApi.setActiveRegionId(region.id)}
+            className="lumeo:min-w-0 lumeo:flex-1 lumeo:cursor-pointer lumeo:truncate lumeo:border-none lumeo:bg-transparent lumeo:p-0 lumeo:text-xs lumeo:font-medium lumeo:text-zinc-700 lumeo:focus:outline-none"
+          />
+          <span className="lumeo:shrink-0 lumeo:text-xs lumeo:text-zinc-400">· {region.aspectLabel}</span>
           <button
             type="button"
             onClick={() => regionsApi.removeRegion(region.id)}
