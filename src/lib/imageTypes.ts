@@ -140,31 +140,27 @@ export function resolveCropLabels(image: LumeoImage): string[] {
   return image.crops.map((crop) => crop.name);
 }
 
-/** Every distinct crop `type` value used anywhere across `images`, normalized to strings so numeric and string-typed `value`s compare consistently. */
-function collectUsedTypeValues(images: LumeoImage[]): Set<string> {
-  const used = new Set<string>();
-  for (const image of images) {
-    for (const crop of image.crops ?? []) {
-      if (crop.type !== undefined) used.add(String(crop.type));
-    }
-  }
-  return used;
+/** Every crop region saved on any image in the list, flattened into one array. */
+function collectAllCrops(images: LumeoImage[]): CropRegion[] {
+  return images.flatMap((image) => image.crops ?? []);
 }
 
 /**
- * Builds a leaf's status directly from `used`; for a group, also builds one status per child (so
- * per-child progress can be rendered) and the group itself is `satisfied` only once every child
- * is.
+ * Builds a leaf's status by checking whether any saved crop matches it — via `regionMatchesOption`,
+ * so this prefers `cropTypeId` the same way the modal's own active/checked state does, falling
+ * back to the slug-like `type`/`value` when either side lacks a `cropTypeId`. For a group, builds
+ * one status per child (so per-child progress can be rendered) and the group itself is `satisfied`
+ * only once every child is.
  */
-function buildRequiredStatus(option: LumeoImageTypeOption, used: Set<string>): RequiredTypeStatus {
+function buildRequiredStatus(option: LumeoImageTypeOption, crops: CropRegion[]): RequiredTypeStatus {
   if (option.crops && option.crops.length > 0) {
     const children = flattenImageTypes(option.crops).map((leaf) => ({
       option: leaf,
-      satisfied: used.has(String(leaf.value)),
+      satisfied: crops.some((crop) => regionMatchesOption(crop, leaf)),
     }));
     return { option, satisfied: children.every((child) => child.satisfied), children };
   }
-  return { option, satisfied: used.has(String(option.value)) };
+  return { option, satisfied: crops.some((crop) => regionMatchesOption(crop, option)) };
 }
 
 /** Every entry (group or leaf, at any nesting depth) that carries its own `required: true`. */
@@ -179,10 +175,12 @@ function collectRequiredEntries(options: LumeoImageTypeOption[]): LumeoImageType
 
 /**
  * Checks every `required` usage type (see `LumeoImageTypeOption.required`) against the **whole**
- * `images` list at once — not per image. A plain/leaf `required` entry needs at least one crop of
- * its exact type somewhere in the list; a group `required` entry needs at least one crop of
- * **every one** of its children somewhere in the list (an "all of these" requirement — mark
- * individual children `required` instead if you only need some subset covered). Intended for a
+ * `images` list at once — not per image. A plain/leaf `required` entry needs at least one matching
+ * crop somewhere in the list; a group `required` entry needs a matching crop for **every one** of
+ * its children somewhere in the list (an "all of these" requirement — mark individual children
+ * `required` instead if you only need some subset covered). A crop "matches" an option the same
+ * way the modal's own active/checked state decides it (see `regionMatchesOption`): by
+ * `cropTypeId` when both sides have one, otherwise by the slug-like `type`/`value`. Intended for a
  * consuming app to gate its own UI (e.g. disable a save button) — the package itself never blocks
  * anything based on this.
  */
@@ -190,9 +188,9 @@ export function checkRequiredImageTypes(
   images: LumeoImage[],
   imageTypes: LumeoImageTypeOption[]
 ): RequiredImageTypesResult {
-  const used = collectUsedTypeValues(images);
+  const crops = collectAllCrops(images);
   const statuses: RequiredTypeStatus[] = collectRequiredEntries(imageTypes).map((option) => ({
-    ...buildRequiredStatus(option, used),
+    ...buildRequiredStatus(option, crops),
     parent: findParentImageType(imageTypes, option.value),
   }));
   const missing = statuses.filter((status) => !status.satisfied).map((status) => status.option);
