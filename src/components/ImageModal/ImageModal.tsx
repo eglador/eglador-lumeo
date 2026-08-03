@@ -3,7 +3,7 @@ import { X, Trash2, Save, SlidersHorizontal, Tag, Calendar, FileType, Ratio } fr
 import { useLumeoConfig } from "../../hooks/useLumeoConfig";
 import { useCropRegions } from "../../hooks/useCropRegions";
 import { useSizeSelections } from "../../hooks/useSizeSelections";
-import { resolveImageTypes, findGroupValueForType } from "../../lib/imageTypes";
+import { resolveImageTypes, findGroupValueForType, findGroupValueForCropRegions } from "../../lib/imageTypes";
 import { resolveSizePresets, toSelectedSize } from "../../lib/sizePresets";
 import { saveImageMeta, deleteImage } from "../../lib/api";
 import { refreshOnce } from "../../lib/refreshOnce";
@@ -61,13 +61,16 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
     setIsSaving(true);
     const selectedSizes = sizePresets.filter((preset) => sizeSelection.isSelected(preset.id));
     // The active type's enclosing "ana tip" group value, if it was picked from a nested group
-    // (classic single-type flow) or if any saved crop's type was (cropByUsageType flow) — sent
+    // (classic single-type flow) or if any saved crop matches one (cropByUsageType flow) — sent
     // back as a top-level `typeId`, alongside `clientId`, so the backend knows which group this
     // save belongs to. Undefined when the active type(s) aren't grouped.
-    const activeTypeValue = cropByUsageType
-      ? cropRegions.regions.find((region) => region.type !== undefined)?.type
-      : selectedType;
-    const groupValue = findGroupValueForType(imageTypes, activeTypeValue);
+    // cropByUsageType resolves which configured type a region matches via `cropTypeId` first (see
+    // `findGroupValueForCropRegions`) rather than the region's raw `type` — otherwise just moving
+    // an already-cropped region (no type re-toggled) would drop `typeId` whenever a backend
+    // doesn't reliably round-trip `type`, even though the button still shows correctly active.
+    const groupValue = cropByUsageType
+      ? findGroupValueForCropRegions(imageTypes, cropRegions.regions)
+      : findGroupValueForType(imageTypes, selectedType);
     const payload = {
       id: image.id,
       // In cropByUsageType mode, each crop already carries its own `type` — there's no single

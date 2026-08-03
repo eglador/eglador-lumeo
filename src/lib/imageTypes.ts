@@ -98,6 +98,28 @@ export function findGroupValueForType(
   return findParentImageType(options, value)?.value;
 }
 
+/**
+ * Same idea as `findGroupValueForType`, but for a saved crop region instead of a raw `value` —
+ * resolves which configured leaf the region matches via `regionMatchesOption` (`cropTypeId` first,
+ * `type`/`value` as fallback) rather than trusting `region.type` alone. This matters because
+ * `region.type` isn't always reliably round-tripped by every backend (some only persist
+ * `cropTypeId`), so relying on `type` alone can silently drop `typeId` from the save payload even
+ * though the modal correctly shows the type as active (via that same `cropTypeId` match). Checks
+ * `regions` in order and returns as soon as one resolves to a configured leaf, whether or not that
+ * leaf turns out to be grouped (mirrors `findGroupValueForType`'s "undefined for ungrouped" rule).
+ */
+export function findGroupValueForCropRegions(
+  imageTypes: LumeoImageTypeOption[],
+  regions: CropRegion[]
+): LumeoTypeValue | undefined {
+  const leaves = flattenImageTypes(imageTypes);
+  for (const region of regions) {
+    const leaf = leaves.find((option) => regionMatchesOption(region, option));
+    if (leaf) return findParentImageType(imageTypes, leaf.value)?.value;
+  }
+  return undefined;
+}
+
 export function findImageTypeLabel(
   value: LumeoTypeValue | undefined,
   options: LumeoImageTypeOption[]
