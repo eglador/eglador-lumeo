@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { formatImageTypeMeta, imageTypeKey, segmentImageTypes, regionMatchesOption } from "../../../lib/imageTypes";
+import type { ImageTypeSegment } from "../../../lib/imageTypes";
 import type { Bounds } from "../../../lib/geometry";
 import type { CropRegion, LumeoImageTypeOption } from "../../../types";
 
@@ -75,6 +76,11 @@ function TypeCropButton({
   );
 }
 
+/** Whether any of a group's children already has a matching active crop region. */
+function groupHasActiveChild(group: LumeoImageTypeOption, regions: CropRegion[]): boolean {
+  return (group.crops ?? []).some((child) => regions.some((region) => regionMatchesOption(region, child)));
+}
+
 /**
  * Turns usage-type selection directly into cropping: clicking an inactive type seeds the
  * largest possible crop for its ratio (locked, only resizable/movable within that ratio) and
@@ -83,14 +89,32 @@ function TypeCropButton({
  * here. Hovering an already-cropped type shows a minimal preview of exactly what was framed.
  * A group entry (has `crops`) renders as a heading over its nested buttons instead of a button
  * itself — only its children are selectable/croppable.
+ *
+ * Once any group has an active crop, every *other* group is locked (faded, unclickable) until
+ * that crop is removed again — a `SaveImagePayload.typeId` can only carry one group's value, so
+ * mixing crops from two different groups on the same image would make that field ambiguous.
+ * Ungrouped (flat) entries are never locked; only picking from within another group is blocked.
  */
 export function TypeCropSelector({ options, regions, imageUrl, naturalSize, onToggle }: TypeCropSelectorProps) {
   const segments = segmentImageTypes(options);
+  const groupSegments = segments.filter(
+    (segment): segment is Extract<ImageTypeSegment, { kind: "group" }> => segment.kind === "group"
+  );
+  const activeGroupValue = groupSegments.find((segment) => groupHasActiveChild(segment.option, regions))?.option
+    .value;
+
   return (
     <div className="lumeo:flex lumeo:flex-col lumeo:gap-2">
       {segments.map((segment, index) =>
         segment.kind === "group" ? (
-          <div key={imageTypeKey(segment.option)} className="lumeo:flex lumeo:flex-col lumeo:gap-1">
+          <div
+            key={imageTypeKey(segment.option)}
+            className={`lumeo:flex lumeo:flex-col lumeo:gap-1 lumeo:transition-opacity ${
+              activeGroupValue !== undefined && segment.option.value !== activeGroupValue
+                ? "lumeo:pointer-events-none lumeo:opacity-40"
+                : ""
+            }`}
+          >
             <p className="lumeo:text-[10px] lumeo:font-semibold lumeo:uppercase lumeo:tracking-wide lumeo:text-zinc-400">
               {segment.option.name ?? segment.option.label}
             </p>

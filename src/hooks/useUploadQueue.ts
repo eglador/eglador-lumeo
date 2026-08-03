@@ -60,7 +60,7 @@ export function useUploadQueue(config: LumeoConfig, refetchList: () => void): Us
     setIsUploading(true);
     const files = pending.map((item) => item.file);
     const actionPromise = uploadImages(config, files);
-    refreshOnce(config.waitForSuccess, actionPromise, refetchList);
+    refreshOnce(config, "upload", actionPromise, refetchList);
     try {
       await actionPromise;
     } finally {

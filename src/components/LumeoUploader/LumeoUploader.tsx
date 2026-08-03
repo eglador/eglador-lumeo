@@ -19,10 +19,22 @@ export interface LumeoUploaderProps {
   defaultViewMode?: LumeoViewMode;
   /** Forwarded to the `ImageModal` opened when an image is selected — see `ImageModalProps.cropByUsageType`. */
   cropByUsageType?: boolean;
+  /**
+   * Hides the built-in gallery (and, by extension, the tag/crop modal it opens) below the
+   * dropzone — just the drag & drop upload area is rendered. Useful when you're already showing
+   * the uploaded images your own way elsewhere (e.g. via `useLumeoImages`) and don't need them
+   * duplicated here. Default: false.
+   */
+  hideGallery?: boolean;
 }
 
 /** Full drag & drop upload + gallery + tagging/cropping experience. Must be rendered inside a <LumeoProvider>. */
-export function LumeoUploader({ className, defaultViewMode = "grid", cropByUsageType = false }: LumeoUploaderProps) {
+export function LumeoUploader({
+  className,
+  defaultViewMode = "grid",
+  cropByUsageType = false,
+  hideGallery = false,
+}: LumeoUploaderProps) {
   const config = useLumeoConfig();
   const { images, loading, refetch } = useLumeoImages(config);
   const queue = useUploadQueue(config, refetch);
@@ -67,17 +79,19 @@ export function LumeoUploader({ className, defaultViewMode = "grid", cropByUsage
           </div>
         )}
 
-        <ImageGallery
-          images={images}
-          loading={loading}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          imageTypes={imageTypes}
-          onSelectImage={setSelectedImage}
-          onRefresh={refetch}
-          messages={messages}
-          locale={config.locale}
-        />
+        {!hideGallery && (
+          <ImageGallery
+            images={images}
+            loading={loading}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            imageTypes={imageTypes}
+            onSelectImage={setSelectedImage}
+            onRefresh={refetch}
+            messages={messages}
+            locale={config.locale}
+          />
+        )}
 
         {selectedImage && (
           <ImageModal

@@ -175,6 +175,28 @@ export interface LumeoEndpoints {
   delete: string;
 }
 
+/** Which write action a `LumeoActionResult` is reporting on. */
+export type LumeoActionKind = "upload" | "save" | "delete";
+
+/**
+ * Outcome of a single upload/save/delete request, passed to `LumeoConfig.onActionResult` once the
+ * request settles — wire it into your own app's notification/toast system.
+ */
+export interface LumeoActionResult {
+  action: LumeoActionKind;
+  /** `true` for a 2xx response. `false` for a non-2xx response or a request that never completed (network error, etc). */
+  success: boolean;
+  /**
+   * Human-readable message, when one is available: on failure, the response body's `message` or
+   * `error` field if present, otherwise a generic "Request failed (status)" string, or — for a
+   * request that never got a response at all — the thrown error's own message. Undefined for a
+   * plain success with nothing to report.
+   */
+  message?: string;
+  /** HTTP status code, when a response was actually received. Absent for network-level failures. */
+  status?: number;
+}
+
 export interface LumeoConfig {
   endpoints: LumeoEndpoints;
   /**
@@ -215,6 +237,13 @@ export interface LumeoConfig {
    * rather than captured once at config-creation time.
    */
   headers?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
+  /**
+   * Called once every time an upload/save/delete request settles — success or failure — with a
+   * `LumeoActionResult` (which action, whether it succeeded, an HTTP `status` when available, and
+   * a `message` parsed from the response body or the thrown error). The package never shows its
+   * own error UI; pipe this into your app's existing error/toast function to surface it to users.
+   */
+  onActionResult?: (result: LumeoActionResult) => void;
 }
 
 export type RejectReason = "type" | "size" | "max-files";

@@ -92,6 +92,29 @@ const config: LumeoConfig = {
 runtime. Either way, the resolved headers are merged into every request — on `save`/`delete` they
 sit alongside the package's own `"Content-Type": "application/json"`.
 
+### Reporting success/errors — `onActionResult`
+
+The package never shows its own error UI. `config.onActionResult` is called once every time an
+upload/save/delete request settles — success or failure — so you can pipe the result into
+whatever error/notification function your own app already has:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  onActionResult: ({ action, success, status, message }) => {
+    if (success) return;
+    myAppShowError(`${action} failed${status ? ` (${status})` : ""}: ${message ?? "Unknown error"}`);
+  },
+};
+```
+
+`message` is best-effort: on a failed response, it's the body's `message` or `error` field when
+either is present, otherwise a generic `"Request failed (status)"` string; for a request that
+never got a response at all (network error, CORS, etc.), it's the thrown error's own message and
+`status` is left `undefined`. This fires regardless of `waitForSuccess` — even with
+`waitForSuccess: false` (where the list already refreshes without waiting), you still get told
+afterward whether the request actually succeeded.
+
 ### Customizing usage types and size presets
 
 Both the "usage type" list (headline/cover/banner/...) and the size-preset list shown in the crop
@@ -146,6 +169,12 @@ The group's own `value` isn't selectable, but it isn't just decoration either: w
 type/crop came from inside that group, the group's `value` is sent back as a top-level `typeId`
 field on the save request (alongside `clientId`, see "cropByUsageType için örnek uçtan uca akış").
 `name` is the heading text shown above the group's buttons (falls back to `label` if omitted).
+
+In the `cropByUsageType` crop tool, only one group can have an active crop at a time — once any
+child in a group gets cropped, every *other* group fades (lowered opacity) and becomes unclickable
+until that crop is removed again. This isn't arbitrary: `typeId` can only carry one group's value,
+so mixing crops from two different groups on the same image would leave it ambiguous. Ungrouped
+(flat) entries are never affected by this lock.
 
 If omitted, `imageTypes` and `sizePresets` fall back to a locale-aware built-in default set
 (English by default, Turkish when `locale: "tr"`).
@@ -767,6 +796,29 @@ const config: LumeoConfig = {
 olabilir. Her iki durumda da çözümlenen header'lar her isteğe eklenir — `save`/`delete`'te
 paketin kendi `"Content-Type": "application/json"` header'ıyla birlikte gönderilir.
 
+### Başarı/hata raporlama — `onActionResult`
+
+Paket kendi hata arayüzünü hiç göstermez. `config.onActionResult`, bir upload/save/delete isteği
+sonuçlandığında — başarılı ya da başarısız fark etmez — bir kez çağrılır; böylece sonucu kendi
+uygulamanızın zaten sahip olduğu hata/bildirim fonksiyonuna aktarabilirsiniz:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  onActionResult: ({ action, success, status, message }) => {
+    if (success) return;
+    benimHataGosterFonksiyonum(`${action} başarısız${status ? ` (${status})` : ""}: ${message ?? "Bilinmeyen hata"}`);
+  },
+};
+```
+
+`message` en iyi çaba (best-effort) esasıyla doldurulur: başarısız bir yanıtta, gövdenin
+`message` ya da `error` alanı varsa o kullanılır, yoksa genel bir `"Request failed (status)"`
+dizesi döner; hiç yanıt alınamayan bir istekte (ağ hatası, CORS vb.) `message` fırlatılan hatanın
+kendi mesajıdır ve `status` `undefined` kalır. Bu, `waitForSuccess`'ten bağımsız çalışır — 
+`waitForSuccess: false` ile bile (liste zaten beklemeden yenilenir) isteğin gerçekten başarılı
+olup olmadığını sonradan öğrenirsiniz.
+
 ### Kullanım tipi ve boyut seçeneklerini özelleştirme
 
 Hem "kullanım tipi" listesi (manşet/kapak/banner/...) hem de kırpma modalinde gösterilen boyut
@@ -824,6 +876,12 @@ tip/kadraj o grubun içinden geldiyse, grubun `value`'su kaydetme isteğinde `cl
 katmanda, üst seviye bir `typeId` alanı olarak geri gönderilir (bkz. "cropByUsageType için örnek
 uçtan uca akış"). `name`, grubun butonlarının üzerinde gösterilen başlık metnidir (verilmezse
 `label`'a düşer).
+
+`cropByUsageType` kırpma aracında aynı anda sadece bir grup aktif kadraja sahip olabilir — bir
+grubun herhangi bir çocuğu kırpıldığı an, diğer TÜM gruplar soluklaşır (opaklığı düşer) ve
+tıklanamaz hale gelir, o kadraj kaldırılana kadar. Bu keyfi bir kısıtlama değil: `typeId` sadece
+tek bir grubun değerini taşıyabilir, dolayısıyla aynı görselde iki farklı gruptan kadraj karışması
+bu alanı belirsiz bırakırdı. Gruplanmamış (düz) girdiler bu kilitten hiç etkilenmez.
 
 `imageTypes` ve `sizePresets` verilmezse, dile göre (locale) değişen hazır bir varsayılan sete
 düşer (varsayılan olarak İngilizce, `locale: "tr"` verildiğinde Türkçe).

@@ -85,7 +85,7 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
         : {}),
     };
     const actionPromise = saveImageMeta(config, payload);
-    refreshOnce(config.waitForSuccess, actionPromise, onRefetch);
+    refreshOnce(config, "save", actionPromise, onRefetch);
     actionPromise.finally(() => {
       setIsSaving(false);
       onClose();
@@ -105,7 +105,7 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
   const handleDelete = () => {
     setIsDeleting(true);
     const actionPromise = deleteImage(config, image.id);
-    refreshOnce(config.waitForSuccess, actionPromise, onRefetch);
+    refreshOnce(config, "delete", actionPromise, onRefetch);
     actionPromise.finally(() => {
       setIsDeleting(false);
       onClose();

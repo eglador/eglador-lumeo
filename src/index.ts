@@ -16,6 +16,8 @@ export type {
   SaveImagePayload,
   RequiredImageTypesResult,
   RequiredTypeStatus,
+  LumeoActionKind,
+  LumeoActionResult,
 } from "./types";
 
 export {
