@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { http, HttpResponse } from "msw";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -10,6 +11,7 @@ import { LumeoMiniViewer } from "../components/MiniViewer/LumeoMiniViewer";
 import { LumeoProvider } from "../context/LumeoProvider";
 import { handlers } from "../mocks/handlers";
 import { ImageDropPlugin } from "./lexical/ImageDropPlugin";
+import type { LumeoImage } from "../types";
 
 const config = {
   endpoints: {
@@ -259,4 +261,123 @@ export const StartsCollapsed: Story = {
       </div>
     </LumeoProvider>
   ),
+};
+
+// Mock list for the allowedTypes demo below: 4 images, only 2 of which ("None"/"InlineImage")
+// should qualify — the other two ("Headline"/"Banner") prove the restriction actually filters
+// something out, not just an empty no-op.
+const allowedTypesImages: LumeoImage[] = [
+  {
+    id: "gövde-1",
+    fileName: "govde-govseli-1.jpg",
+    url: "https://picsum.photos/seed/allowed-none/600/400",
+    uploadedAt: new Date().toISOString(),
+    type: "None",
+    width: 600,
+    height: 400,
+  },
+  {
+    id: "gövde-2",
+    fileName: "govde-gorseli-2.jpg",
+    url: "https://picsum.photos/seed/allowed-inline/600/400",
+    uploadedAt: new Date().toISOString(),
+    type: "InlineImage",
+    width: 600,
+    height: 400,
+  },
+  {
+    id: "manset-1",
+    fileName: "manset-gorseli.jpg",
+    url: "https://picsum.photos/seed/allowed-headline/600/400",
+    uploadedAt: new Date().toISOString(),
+    type: "Headline",
+    width: 600,
+    height: 400,
+  },
+  {
+    id: "banner-1",
+    fileName: "banner-gorseli.jpg",
+    url: "https://picsum.photos/seed/allowed-banner/600/400",
+    uploadedAt: new Date().toISOString(),
+    type: "Banner",
+    width: 600,
+    height: 400,
+  },
+];
+
+const allowedTypesHandlers = [
+  http.get("/api/mock/list", () => HttpResponse.json({ images: allowedTypesImages })),
+];
+
+/**
+ * `allowedTypes` restricts the widget to only images whose `type` matches one of the given values
+ * — here `["None", "InlineImage"]` — hiding every other tagged type (e.g. "Headline", "Banner")
+ * regardless of what else exists in the list. The usage-type filter dropdown disappears too,
+ * since there's nothing left to filter by — the list is already scoped. The mock list behind this
+ * story has 4 images; only the 2 tagged "None"/"InlineImage" show up here.
+ */
+export const AllowedTypesOnly: Story = {
+  name: "allowedTypes — sadece 'None'/'InlineImage' tipleri göster",
+  render: () => (
+    <LumeoProvider config={config}>
+      <div style={{ height: "70vh", position: "relative" }}>
+        <p style={{ padding: 16, color: "#9ca3af", fontSize: 13 }}>
+          Mock listede 4 görsel var — tipleri "None", "InlineImage", "Headline", "Banner".{" "}
+          <code>allowedTypes=[&quot;None&quot;, &quot;InlineImage&quot;]</code> verildiği için
+          sadece ilk ikisi burada görünüyor; "Headline"/"Banner" gizli kalıyor ve filtre
+          dropdown'ı da kayboldu (zaten filtrelenecek bir şey kalmadığı için).
+        </p>
+        <LumeoMiniViewer
+          corner="bottom-right"
+          allowedTypes={["None", "InlineImage"]}
+          onImageClick={(image) => alert(`Tıklandı: ${image.fileName}`)}
+        />
+      </div>
+    </LumeoProvider>
+  ),
+  parameters: {
+    msw: { handlers: allowedTypesHandlers },
+  },
+};
+
+// Same idea, but for a backend that sends its type tag under `imageType` instead of `type` — note
+// `type` is left undefined on every image here, proving the check really reads `imageType`.
+const allowedByImageTypeImages: LumeoImage[] = allowedTypesImages.map(({ type, ...rest }) => ({
+  ...rest,
+  imageType: type,
+}));
+
+const allowedByImageTypeHandlers = [
+  http.get("/api/mock/list", () => HttpResponse.json({ images: allowedByImageTypeImages })),
+];
+
+/**
+ * `allowedTypesField="imageType"` points the same restriction at `LumeoImage.imageType` instead
+ * of `type` — for a backend that sends its type tag under that field name. Same mock scenario as
+ * `AllowedTypesOnly` above, just with the tag moved to `imageType` (and `type` left undefined on
+ * every image, to prove the check isn't secretly still reading `type`).
+ */
+export const AllowedTypesByImageTypeField: Story = {
+  name: "allowedTypes + allowedTypesField=\"imageType\"",
+  render: () => (
+    <LumeoProvider config={config}>
+      <div style={{ height: "70vh", position: "relative" }}>
+        <p style={{ padding: 16, color: "#9ca3af", fontSize: 13 }}>
+          Bu mock listede tip bilgisi <code>type</code> değil, <code>imageType</code> alanında
+          taşınıyor (<code>type</code> hiçbirinde tanımlı değil).{" "}
+          <code>allowedTypesField=&quot;imageType&quot;</code> verildiği için filtreleme yine
+          doğru çalışıyor — sadece "None"/"InlineImage" görünüyor.
+        </p>
+        <LumeoMiniViewer
+          corner="bottom-right"
+          allowedTypes={["None", "InlineImage"]}
+          allowedTypesField="imageType"
+          onImageClick={(image) => alert(`Tıklandı: ${image.fileName}`)}
+        />
+      </div>
+    </LumeoProvider>
+  ),
+  parameters: {
+    msw: { handlers: allowedByImageTypeHandlers },
+  },
 };

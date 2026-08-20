@@ -59,6 +59,13 @@ export interface LumeoImage {
   /** ISO 8601 timestamp as returned by the API. */
   uploadedAt: string;
   type?: LumeoTypeValue;
+  /**
+   * A second, independent type-like field some backends send under a different name (e.g. a raw
+   * CMS field literally called `imageType`) instead of, or alongside, `type`. The package never
+   * reads this on its own — it only exists so `LumeoMiniViewer`'s `allowedTypes` can be pointed
+   * at it via `allowedTypesField="imageType"` when that's the field your API actually returns.
+   */
+  imageType?: LumeoTypeValue;
   fileSize?: number;
   mimeType?: string;
   /** Original pixel dimensions, as returned by the API after upload. */

@@ -6,7 +6,7 @@ import { useLumeoImages } from "../../hooks/useLumeoImages";
 import { resolveImageTypes, imageTypeKey } from "../../lib/imageTypes";
 import { getMessages } from "../../lib/i18n";
 import { panel, iconButton, inputBase } from "../../styles/editorial";
-import type { LumeoImage } from "../../types";
+import type { LumeoImage, LumeoTypeValue } from "../../types";
 
 /** Default token inside `LumeoMiniViewerDragConfig.pattern` that gets replaced with the resolved value. */
 const DEFAULT_DRAG_PLACEHOLDER = "{value}";
@@ -40,6 +40,21 @@ export interface LumeoMiniViewerProps {
   dragData?: LumeoMiniViewerDragConfig;
   /** Renders collapsed (small chip) on first mount instead of expanded. Default: false. */
   defaultCollapsed?: boolean;
+  /**
+   * Restricts the widget to only images whose type field (see `allowedTypesField`) is one of
+   * these values — e.g. `["None", "InlineImage"]` to only ever show images meant for inline/body
+   * use here, hiding every other tagged type (headline crops, banners, etc.) regardless of what's
+   * uploaded elsewhere. When set, the usage-type filter dropdown is hidden too, since there's
+   * nothing left to filter by — the list is already scoped. Omit for the default behavior: every
+   * image shown, filterable by any configured usage type.
+   */
+  allowedTypes?: LumeoTypeValue[];
+  /**
+   * Which field on `LumeoImage` `allowedTypes` checks — `"type"` (default) or `"imageType"`, for
+   * a backend that sends its type tag under that name instead. Ignored when `allowedTypes` isn't
+   * set.
+   */
+  allowedTypesField?: "type" | "imageType";
 }
 
 const CORNER_CLASS: Record<NonNullable<LumeoMiniViewerProps["corner"]>, string> = {
@@ -63,6 +78,8 @@ export function LumeoMiniViewer({
   className,
   dragData,
   defaultCollapsed = false,
+  allowedTypes,
+  allowedTypesField = "type",
 }: LumeoMiniViewerProps) {
   const config = useLumeoConfig();
   const messages = useMemo(() => getMessages(config.locale), [config.locale]);
@@ -71,9 +88,17 @@ export function LumeoMiniViewer({
     [config.imageTypes, config.locale]
   );
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const { images, loading, refetch } = useLumeoImages(config, {
+  const { images: fetchedImages, loading, refetch } = useLumeoImages(config, {
+    // The dropdown is hidden once `allowedTypes` is set (see below), so `typeFilter` always stays
+    // "all" in that mode — filtering down to `allowedTypes` happens separately, right after.
     type: typeFilter === "all" ? undefined : typeFilter,
   });
+  const images = allowedTypes
+    ? fetchedImages.filter((image) => {
+        const fieldValue = allowedTypesField === "imageType" ? image.imageType : image.type;
+        return fieldValue !== undefined && allowedTypes.some((value) => String(value) === String(fieldValue));
+      })
+    : fetchedImages;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [justRefreshed, setJustRefreshed] = useState(false);
   const refreshTriggeredRef = useRef(false);
@@ -198,28 +223,30 @@ export function LumeoMiniViewer({
 
       {!collapsed && (
         <div className="lumeo:flex lumeo:flex-col lumeo:gap-2 lumeo:p-3">
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value)}
-            className={inputBase}
-          >
-            <option value="all">{messages.all}</option>
-            {imageTypes.map((option) =>
-              option.crops && option.crops.length > 0 ? (
-                <optgroup key={imageTypeKey(option)} label={option.name ?? option.label}>
-                  {option.crops.map((child) => (
-                    <option key={imageTypeKey(child)} value={child.value}>
-                      {child.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ) : (
-                <option key={imageTypeKey(option)} value={option.value}>
-                  {option.label}
-                </option>
-              )
-            )}
-          </select>
+          {!allowedTypes && (
+            <select
+              value={typeFilter}
+              onChange={(event) => setTypeFilter(event.target.value)}
+              className={inputBase}
+            >
+              <option value="all">{messages.all}</option>
+              {imageTypes.map((option) =>
+                option.crops && option.crops.length > 0 ? (
+                  <optgroup key={imageTypeKey(option)} label={option.name ?? option.label}>
+                    {option.crops.map((child) => (
+                      <option key={imageTypeKey(child)} value={child.value}>
+                        {child.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <option key={imageTypeKey(option)} value={option.value}>
+                    {option.label}
+                  </option>
+                )
+              )}
+            </select>
+          )}
 
           <div className="lumeo:grid lumeo:max-h-64 lumeo:grid-cols-3 lumeo:gap-1.5 lumeo:overflow-y-auto">
             {loading && images.length === 0 ? (

@@ -660,6 +660,39 @@ position and size it with your own CSS:
 </div>
 ```
 
+#### Restricting to specific usage types
+
+`allowedTypes` limits the widget to only images whose `type` is one of the given values — every
+other tagged type is hidden, regardless of what's uploaded elsewhere. The usage-type filter
+dropdown disappears too, since there's nothing left to filter by once the list is already scoped:
+
+```tsx
+<LumeoMiniViewer
+  allowedTypes={["None", "InlineImage"]}
+  onImageClick={(image) => insertIntoEditor(image)}
+/>
+```
+
+Useful for a corner widget meant for one specific purpose (e.g. picking body/inline images for a
+rich text editor) that shouldn't surface headline crops, banners, or anything else tagged for a
+different use. See it live in the `LumeoMiniViewer / AllowedTypesOnly` Storybook story.
+
+If your backend sends its type tag under a different field name — `imageType` instead of `type` —
+point the check there with `allowedTypesField`:
+
+```tsx
+<LumeoMiniViewer
+  allowedTypes={["None", "InlineImage"]}
+  allowedTypesField="imageType"
+  onImageClick={(image) => insertIntoEditor(image)}
+/>
+```
+
+`LumeoImage.imageType` is an optional field the package carries for exactly this — it's never read
+anywhere else, only here when `allowedTypesField="imageType"` is set. See the
+`LumeoMiniViewer / AllowedTypesByImageTypeField` story for a live example (using a mock list where
+`type` is left undefined and only `imageType` carries the tag).
+
 #### Dragging thumbnails into an editor
 
 Pass `dragData` to make thumbnails draggable. `pattern` is a template string with a placeholder
@@ -1580,6 +1613,41 @@ gömmek için `position="static"` verin — konumlandırmayı ve boyutu kendi CS
   <LumeoMiniViewer position="static" onImageClick={(image) => insertIntoEditor(image)} />
 </div>
 ```
+
+#### Belirli kullanım tipleriyle sınırlama
+
+`allowedTypes`, widget'ı sadece `type`'ı verilen değerlerden biri olan görsellerle sınırlar —
+başka yerde ne yüklenmiş olursa olsun, farklı işaretlenmiş diğer tüm tipler gizli kalır. Liste
+zaten sınırlandığı için filtrelenecek bir şey kalmadığından kullanım tipi filtre dropdown'ı da
+kaybolur:
+
+```tsx
+<LumeoMiniViewer
+  allowedTypes={["None", "InlineImage"]}
+  onImageClick={(image) => insertIntoEditor(image)}
+/>
+```
+
+Tek bir amaca hizmet eden bir köşe widget'ı için kullanışlıdır (ör. zengin metin editörü için
+gövde/satır içi görsel seçimi) — manşet kadrajları, banner'lar veya başka bir kullanım için
+işaretlenmiş hiçbir şeyin burada görünmesini istemediğiniz durumlarda. Canlı örnek için
+`LumeoMiniViewer / AllowedTypesOnly` Storybook story'sine bakabilirsiniz.
+
+Backend'iniz tip etiketini farklı bir alan adıyla gönderiyorsa — `type` yerine `imageType` —
+kontrolü `allowedTypesField` ile o alana yönlendirin:
+
+```tsx
+<LumeoMiniViewer
+  allowedTypes={["None", "InlineImage"]}
+  allowedTypesField="imageType"
+  onImageClick={(image) => insertIntoEditor(image)}
+/>
+```
+
+`LumeoImage.imageType`, tam olarak bunun için taşınan opsiyonel bir alandır — paket bunu başka
+hiçbir yerde okumaz, sadece `allowedTypesField="imageType"` verildiğinde burada kullanılır. Canlı
+örnek için `LumeoMiniViewer / AllowedTypesByImageTypeField` story'sine bakabilirsiniz (`type`'ın
+hiç tanımlı olmadığı, sadece `imageType`'ın etiketi taşıdığı bir mock liste kullanır).
 
 #### Küçük resimleri bir editöre sürükleyip bırakmak
 
