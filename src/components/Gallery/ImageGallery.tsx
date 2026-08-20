@@ -19,6 +19,8 @@ export interface ImageGalleryProps {
   /** Falls back to English (`getMessages()`) if omitted, e.g. when used standalone outside a provider. */
   messages?: LumeoMessages;
   locale?: LumeoLocale;
+  /** From `LumeoConfig.inlineImageBadgeLabel` — see `InlineImageBadge`. */
+  inlineImageBadgeLabel?: string;
 }
 
 export function ImageGallery({
@@ -31,6 +33,7 @@ export function ImageGallery({
   onRefresh,
   messages: messagesProp,
   locale,
+  inlineImageBadgeLabel,
 }: ImageGalleryProps) {
   const messages = messagesProp ?? getMessages(locale);
   const [justRefreshed, setJustRefreshed] = useState(false);
@@ -105,9 +108,20 @@ export function ImageGallery({
       ) : images.length === 0 ? (
         <p className="lumeo:py-8 lumeo:text-center lumeo:text-sm lumeo:text-zinc-400">{messages.noImages}</p>
       ) : viewMode === "grid" ? (
-        <GridView images={images} imageTypes={imageTypes} onSelectImage={onSelectImage} />
+        <GridView
+          images={images}
+          imageTypes={imageTypes}
+          onSelectImage={onSelectImage}
+          inlineImageBadgeLabel={inlineImageBadgeLabel}
+        />
       ) : (
-        <DetailView images={images} imageTypes={imageTypes} onSelectImage={onSelectImage} locale={locale} />
+        <DetailView
+          images={images}
+          imageTypes={imageTypes}
+          onSelectImage={onSelectImage}
+          locale={locale}
+          inlineImageBadgeLabel={inlineImageBadgeLabel}
+        />
       )}
     </div>
   );

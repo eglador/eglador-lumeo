@@ -115,6 +115,30 @@ never got a response at all (network error, CORS, etc.), it's the thrown error's
 `waitForSuccess: false` (where the list already refreshes without waiting), you still get told
 afterward whether the request actually succeeded.
 
+### Inline image badge
+
+`config.inlineImageBadgeLabel` adds a distinct badge (visually separate from the usual usage-type
+badge — a different color, not just another pill in the same style) to any image in the gallery
+(grid and detail views) whose `imageType` is exactly `"InlineImage"`. The badge only appears when
+this is set — omit it to show nothing extra:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  inlineImageBadgeLabel: "Inline Image",
+};
+```
+
+`LumeoImage.imageType` is a separate, optional field from `type` (see "Restricting to specific
+usage types" above) — set it from your list API's response the same way you already do for
+`type`.
+
+Clicking a `imageType: "InlineImage"` image opens a stripped-down version of the popup: just a
+large preview and a delete button — no usage-type tagging, no info panel, no resize/crop, no save.
+These images are meant to be used as-is, not re-tagged or re-cropped from the gallery. Every other
+image still opens the normal, full-featured popup. See both behaviors live in the
+`LumeoUploader / InlineImageBadgeDemo` Storybook story.
+
 ### Customizing usage types and size presets
 
 Both the "usage type" list (headline/cover/banner/...) and the size-preset list shown in the crop
@@ -851,6 +875,31 @@ dizesi döner; hiç yanıt alınamayan bir istekte (ağ hatası, CORS vb.) `mess
 kendi mesajıdır ve `status` `undefined` kalır. Bu, `waitForSuccess`'ten bağımsız çalışır — 
 `waitForSuccess: false` ile bile (liste zaten beklemeden yenilenir) isteğin gerçekten başarılı
 olup olmadığını sonradan öğrenirsiniz.
+
+### Satır içi görsel rozeti
+
+`config.inlineImageBadgeLabel`, galerideki (grid ve detay görünümleri) `imageType`'ı tam olarak
+`"InlineImage"` olan her görsele, normal kullanım tipi rozetinden görsel olarak ayrışan (aynı
+stilde başka bir rozet değil, farklı renkli) bir rozet ekler. Bu rozet sadece bu ayar verildiğinde
+görünür — vermezseniz hiçbir ekstra şey gösterilmez:
+
+```tsx
+const config: LumeoConfig = {
+  endpoints: { /* ... */ },
+  inlineImageBadgeLabel: "Satır İçi Görsel",
+};
+```
+
+`LumeoImage.imageType`, `type`'tan bağımsız, ayrı opsiyonel bir alandır (yukarıdaki "Belirli
+kullanım tipleriyle sınırlama" bölümüne bakın) — liste API'nizin yanıtından, `type`'ı zaten
+doldurduğunuz gibi doldurun.
+
+`imageType: "InlineImage"` olan bir görsele tıklayınca popup'ın sadeleştirilmiş bir hali açılır:
+sadece büyük bir önizleme ve bir sil butonu — kullanım tipi etiketleme, bilgiler paneli,
+boyutlandır/kırp, kaydet hiç yok. Bu görseller olduğu gibi kullanılmak üzere tasarlanmıştır,
+galeriden tekrar etiketlenmesi/kırpılması beklenmez. Diğer tüm görseller yine normal, tam
+özellikli popup'ı açar. Her iki davranışı da canlı görmek için `LumeoUploader /
+InlineImageBadgeDemo` Storybook story'sine bakabilirsiniz.
 
 ### Kullanım tipi ve boyut seçeneklerini özelleştirme
 

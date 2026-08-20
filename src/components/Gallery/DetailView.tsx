@@ -1,6 +1,7 @@
 import { Calendar, Crop } from "lucide-react";
 import type { LumeoImage, LumeoImageTypeOption, LumeoLocale } from "../../types";
 import { TypeBadge } from "./TypeBadge";
+import { InlineImageBadge } from "./InlineImageBadge";
 import { resolveCropLabels } from "../../lib/imageTypes";
 import { panel } from "../../styles/editorial";
 import { dateLocaleTag } from "../../lib/i18n";
@@ -10,6 +11,8 @@ export interface DetailViewProps {
   imageTypes: LumeoImageTypeOption[];
   onSelectImage: (image: LumeoImage) => void;
   locale?: LumeoLocale;
+  /** From `LumeoConfig.inlineImageBadgeLabel` — see `InlineImageBadge`. */
+  inlineImageBadgeLabel?: string;
 }
 
 function formatDate(iso: string, locale: string): string {
@@ -18,7 +21,7 @@ function formatDate(iso: string, locale: string): string {
   return date.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
 }
 
-export function DetailView({ images, imageTypes, onSelectImage, locale }: DetailViewProps) {
+export function DetailView({ images, imageTypes, onSelectImage, locale, inlineImageBadgeLabel }: DetailViewProps) {
   const dateLocale = dateLocaleTag(locale);
 
   return (
@@ -48,7 +51,10 @@ export function DetailView({ images, imageTypes, onSelectImage, locale }: Detail
               ))}
             </div>
           </div>
-          <TypeBadge type={image.type} imageTypes={imageTypes} />
+          <div className="lumeo:flex lumeo:shrink-0 lumeo:items-center lumeo:gap-1.5">
+            <InlineImageBadge image={image} label={inlineImageBadgeLabel} />
+            <TypeBadge type={image.type} imageTypes={imageTypes} />
+          </div>
         </button>
       ))}
     </div>

@@ -1,6 +1,7 @@
 import { Crop } from "lucide-react";
 import type { LumeoImage, LumeoImageTypeOption } from "../../types";
 import { TypeBadge } from "./TypeBadge";
+import { InlineImageBadge } from "./InlineImageBadge";
 import { resolveCropLabels } from "../../lib/imageTypes";
 import { tagOutline } from "../../styles/editorial";
 
@@ -8,9 +9,11 @@ export interface GridViewProps {
   images: LumeoImage[];
   imageTypes: LumeoImageTypeOption[];
   onSelectImage: (image: LumeoImage) => void;
+  /** From `LumeoConfig.inlineImageBadgeLabel` — see `InlineImageBadge`. */
+  inlineImageBadgeLabel?: string;
 }
 
-export function GridView({ images, imageTypes, onSelectImage }: GridViewProps) {
+export function GridView({ images, imageTypes, onSelectImage, inlineImageBadgeLabel }: GridViewProps) {
   return (
     <div className="lumeo:grid lumeo:grid-cols-2 lumeo:gap-3 lumeo:sm:grid-cols-3 lumeo:md:grid-cols-4 lumeo:lg:grid-cols-5">
       {images.map((image) => (
@@ -27,6 +30,7 @@ export function GridView({ images, imageTypes, onSelectImage }: GridViewProps) {
           />
           <div className="lumeo:absolute lumeo:bottom-1.5 lumeo:left-1.5 lumeo:flex lumeo:flex-wrap lumeo:gap-1">
             <TypeBadge type={image.type} imageTypes={imageTypes} />
+            <InlineImageBadge image={image} label={inlineImageBadgeLabel} />
             {resolveCropLabels(image).map((label, index) => (
               <span
                 key={`${label}-${index}`}

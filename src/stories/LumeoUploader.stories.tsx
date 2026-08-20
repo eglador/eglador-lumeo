@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { http, HttpResponse } from "msw";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -13,7 +14,7 @@ import { ImageNode } from "./lexical/ImageNode";
 import { ImageObjectDropPlugin } from "./lexical/ImageObjectDropPlugin";
 import { ToolbarPlugin } from "./lexical/ToolbarPlugin";
 import { JsonOutputPlugin } from "./lexical/JsonOutputPlugin";
-import type { LumeoConfig, LumeoImageTypeOption } from "../types";
+import type { LumeoConfig, LumeoImage, LumeoImageTypeOption } from "../types";
 
 const baseConfig: LumeoConfig = {
   endpoints: {
@@ -198,4 +199,75 @@ export const TurkishLocale: Story = {
       <LumeoUploader />
     </LumeoProvider>
   ),
+};
+
+// Mock list for the inlineImageBadgeLabel demo below: 3 images, only 1 tagged
+// `imageType: "InlineImage"` — proving the badge shows up on just that one, not every image.
+const inlineBadgeImages: LumeoImage[] = [
+  {
+    id: "inline-1",
+    fileName: "govde-gorseli.jpg",
+    url: "https://picsum.photos/seed/inline-badge-1/800/500",
+    uploadedAt: new Date().toISOString(),
+    type: "kapak",
+    imageType: "InlineImage",
+    width: 800,
+    height: 500,
+  },
+  {
+    id: "manset-1",
+    fileName: "manset-gorseli.jpg",
+    url: "https://picsum.photos/seed/inline-badge-2/800/500",
+    uploadedAt: new Date().toISOString(),
+    type: "manset",
+    width: 800,
+    height: 500,
+  },
+  {
+    id: "etiketsiz-1",
+    fileName: "etiketsiz-gorsel.jpg",
+    url: "https://picsum.photos/seed/inline-badge-3/800/600",
+    uploadedAt: new Date().toISOString(),
+    width: 800,
+    height: 600,
+  },
+];
+
+// Mutable (not the const array above) so the delete handler below can actually remove from it —
+// proves the minimal "InlineImage" popup's delete button really works, not just that it renders.
+let inlineBadgeMockImages: LumeoImage[] = [...inlineBadgeImages];
+
+const inlineBadgeHandlers = [
+  http.get("/api/mock/list", () => HttpResponse.json({ images: inlineBadgeMockImages })),
+  http.delete("/api/mock/delete", async ({ request }) => {
+    const body = (await request.json()) as { id: string };
+    inlineBadgeMockImages = inlineBadgeMockImages.filter((image) => image.id !== body.id);
+    return HttpResponse.json({ success: true });
+  }),
+];
+
+/**
+ * `config.inlineImageBadgeLabel` adds a distinct (indigo) badge to any image whose `imageType` is
+ * exactly `"InlineImage"` — the label text itself is whatever you configure, shown alongside the
+ * usual usage-type badge. Only the first of the 3 mock images here carries `imageType`, so only
+ * it gets the extra badge.
+ */
+export const InlineImageBadgeDemo: Story = {
+  name: "inlineImageBadgeLabel — 'InlineImage' etiketli görsellere özel rozet",
+  render: () => (
+    <LumeoProvider
+      config={{ ...baseConfig, locale: "tr", waitForSuccess: true, inlineImageBadgeLabel: "Satır İçi Görsel" }}
+    >
+      <LumeoUploader />
+    </LumeoProvider>
+  ),
+  parameters: {
+    msw: { handlers: inlineBadgeHandlers },
+    docs: {
+      description: {
+        story:
+          "3 mock görselden sadece biri (`govde-gorseli.jpg`) `imageType: \"InlineImage\"` taşıyor. `config.inlineImageBadgeLabel: \"Satır İçi Görsel\"` verildiği için o görselin üzerinde, normal kullanım tipi rozetinin yanında ayrı, farklı renkli (indigo) bir rozet daha görünür — diğer iki görselde bu ekstra rozet hiç yok. O görsele tıklayıp açtığınızda da popup farklı davranır: kullanım tipi, bilgiler paneli, kırp/boyutlandır ve kaydet hiç yok — sadece büyük bir önizleme ve tek bir Sil butonu (bunun dışındaki iki görsele tıklarsanız normal, tam özellikli popup açılır).",
+      },
+    },
+  },
 };

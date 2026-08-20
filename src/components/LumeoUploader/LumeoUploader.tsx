@@ -90,6 +90,7 @@ export function LumeoUploader({
             onRefresh={refetch}
             messages={messages}
             locale={config.locale}
+            inlineImageBadgeLabel={config.inlineImageBadgeLabel}
           />
         )}
 

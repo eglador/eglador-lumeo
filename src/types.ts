@@ -251,6 +251,12 @@ export interface LumeoConfig {
    * own error UI; pipe this into your app's existing error/toast function to surface it to users.
    */
   onActionResult?: (result: LumeoActionResult) => void;
+  /**
+   * Label text for a distinct badge shown in the gallery (grid and detail views) on any image
+   * whose `imageType` is exactly `"InlineImage"` — e.g. `"Satır İçi"` or `"Inline"`. The badge is
+   * only rendered when this is set; omit to show nothing extra for inline-tagged images.
+   */
+  inlineImageBadgeLabel?: string;
 }
 
 export type RejectReason = "type" | "size" | "max-files";
