@@ -266,7 +266,7 @@ export const InlineImageBadgeDemo: Story = {
     docs: {
       description: {
         story:
-          "3 mock görselden sadece biri (`govde-gorseli.jpg`) `imageType: \"InlineImage\"` taşıyor. `config.inlineImageBadgeLabel: \"Satır İçi Görsel\"` verildiği için o görselin üzerinde, normal kullanım tipi rozetinin yanında ayrı, farklı renkli (indigo) bir rozet daha görünür — diğer iki görselde bu ekstra rozet hiç yok. O görsele tıklayıp açtığınızda da popup farklı davranır: kullanım tipi, bilgiler paneli, kırp/boyutlandır ve kaydet hiç yok — sadece büyük bir önizleme ve tek bir Sil butonu (bunun dışındaki iki görsele tıklarsanız normal, tam özellikli popup açılır).",
+          "3 mock görselden sadece biri (`govde-gorseli.jpg`) `imageType: \"InlineImage\"` taşıyor. `config.inlineImageBadgeLabel: \"Satır İçi Görsel\"` verildiği için o görselin üzerinde, normal kullanım tipi rozetinin yanında ayrı, farklı renkli (indigo) bir rozet daha görünür — diğer iki görselde bu ekstra rozet hiç yok. O görsele tıklayıp açtığınızda da popup farklı davranır: kullanım tipi, bilgiler paneli, kırp/boyutlandır, kaydet ve sil — hiçbiri yok, sadece büyük bir önizleme ve kapatma butonu (salt-görüntüleme); bunun dışındaki iki görsele tıklarsanız normal, tam özellikli (sil/kaydet dahil) popup açılır.",
       },
     },
   },

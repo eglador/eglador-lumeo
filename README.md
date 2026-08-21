@@ -133,11 +133,11 @@ const config: LumeoConfig = {
 usage types" above) — set it from your list API's response the same way you already do for
 `type`.
 
-Clicking a `imageType: "InlineImage"` image opens a stripped-down version of the popup: just a
-large preview and a delete button — no usage-type tagging, no info panel, no resize/crop, no save.
-These images are meant to be used as-is, not re-tagged or re-cropped from the gallery. Every other
-image still opens the normal, full-featured popup. See both behaviors live in the
-`LumeoUploader / InlineImageBadgeDemo` Storybook story.
+Clicking a `imageType: "InlineImage"` image opens a stripped-down, view-only version of the popup:
+just a large preview and a close button — no usage-type tagging, no info panel, no resize/crop, no
+save, no delete. These images are meant to be used as-is, not re-tagged, re-cropped, or removed
+from the gallery. Every other image still opens the normal, full-featured popup. See both
+behaviors live in the `LumeoUploader / InlineImageBadgeDemo` Storybook story.
 
 ### Customizing usage types and size presets
 
@@ -894,12 +894,12 @@ const config: LumeoConfig = {
 kullanım tipleriyle sınırlama" bölümüne bakın) — liste API'nizin yanıtından, `type`'ı zaten
 doldurduğunuz gibi doldurun.
 
-`imageType: "InlineImage"` olan bir görsele tıklayınca popup'ın sadeleştirilmiş bir hali açılır:
-sadece büyük bir önizleme ve bir sil butonu — kullanım tipi etiketleme, bilgiler paneli,
-boyutlandır/kırp, kaydet hiç yok. Bu görseller olduğu gibi kullanılmak üzere tasarlanmıştır,
-galeriden tekrar etiketlenmesi/kırpılması beklenmez. Diğer tüm görseller yine normal, tam
-özellikli popup'ı açar. Her iki davranışı da canlı görmek için `LumeoUploader /
-InlineImageBadgeDemo` Storybook story'sine bakabilirsiniz.
+`imageType: "InlineImage"` olan bir görsele tıklayınca popup'ın sadeleştirilmiş, salt-görüntüleme
+bir hali açılır: sadece büyük bir önizleme ve bir kapatma butonu — kullanım tipi etiketleme,
+bilgiler paneli, boyutlandır/kırp, kaydet, sil — hiçbiri yok. Bu görseller olduğu gibi kullanılmak
+üzere tasarlanmıştır, galeriden tekrar etiketlenmesi/kırpılması/silinmesi beklenmez. Diğer tüm
+görseller yine normal, tam özellikli popup'ı açar. Her iki davranışı da canlı görmek için
+`LumeoUploader / InlineImageBadgeDemo` Storybook story'sine bakabilirsiniz.
 
 ### Kullanım tipi ve boyut seçeneklerini özelleştirme
 

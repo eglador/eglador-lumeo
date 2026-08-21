@@ -112,70 +112,40 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
     });
   };
 
-  // Inline-tagged images (see "Inline image badge" in the README) get a stripped-down popup —
-  // just a large preview and a delete button, no tagging/crop/save UI at all — since they're
-  // meant to be used as-is, not re-tagged or re-cropped from here.
+  // Inline-tagged images (see "Inline image badge" in the README) get a stripped-down, view-only
+  // popup — just a large preview, no tagging/crop/save UI and no delete button either — since
+  // they're meant to be used as-is, not re-tagged, re-cropped, or removed from here.
   if (image.imageType === "InlineImage") {
     return (
-      <>
+      <div
+        className="lumeo-root lumeo:fixed lumeo:inset-0 lumeo:z-50 lumeo:flex lumeo:items-center lumeo:justify-center lumeo:bg-zinc-900/50 lumeo:p-4 lumeo:font-sans lumeo:backdrop-blur-sm lumeo:animate-fade-in"
+        onClick={onClose}
+      >
         <div
-          className="lumeo-root lumeo:fixed lumeo:inset-0 lumeo:z-50 lumeo:flex lumeo:items-center lumeo:justify-center lumeo:bg-zinc-900/50 lumeo:p-4 lumeo:font-sans lumeo:backdrop-blur-sm lumeo:animate-fade-in"
-          onClick={onClose}
+          className="lumeo:flex lumeo:max-h-[92vh] lumeo:w-full lumeo:max-w-3xl lumeo:flex-col lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:shadow-lg lumeo:animate-scale-in"
+          onClick={(event) => event.stopPropagation()}
         >
-          <div
-            className="lumeo:flex lumeo:max-h-[92vh] lumeo:w-full lumeo:max-w-3xl lumeo:flex-col lumeo:overflow-hidden lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:shadow-lg lumeo:animate-scale-in"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:border-b lumeo:border-zinc-100 lumeo:px-6 lumeo:py-4">
-              <p className="lumeo:truncate lumeo:text-lg lumeo:font-semibold lumeo:text-zinc-900">{image.fileName}</p>
-              <button
-                type="button"
-                onClick={onClose}
-                className={`lumeo:h-8 lumeo:w-8 ${iconButton}`}
-                aria-label={messages.close}
-              >
-                <X size={16} />
-              </button>
-            </div>
+          <div className="lumeo:flex lumeo:items-center lumeo:justify-between lumeo:border-b lumeo:border-zinc-100 lumeo:px-6 lumeo:py-4">
+            <p className="lumeo:truncate lumeo:text-lg lumeo:font-semibold lumeo:text-zinc-900">{image.fileName}</p>
+            <button
+              type="button"
+              onClick={onClose}
+              className={`lumeo:h-8 lumeo:w-8 ${iconButton}`}
+              aria-label={messages.close}
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-            {config.waitForSuccess && isDeleting && <LoadingBar />}
-
-            <div className="lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:overflow-y-auto lumeo:bg-zinc-50 lumeo:p-6">
-              <img
-                src={image.url}
-                alt={image.fileName}
-                className="lumeo:max-h-[70vh] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
-              />
-            </div>
-
-            <div className="lumeo:flex lumeo:justify-end lumeo:border-t lumeo:border-zinc-100 lumeo:px-6 lumeo:py-4">
-              <button
-                type="button"
-                disabled={isDeleting}
-                onClick={() => setConfirmAction("delete")}
-                className={`lumeo:flex lumeo:items-center lumeo:justify-center lumeo:gap-1.5 lumeo:px-4 lumeo:py-2 lumeo:text-sm lumeo:font-medium ${dangerButton}`}
-              >
-                <Trash2 size={15} /> {messages.delete}
-              </button>
-            </div>
+          <div className="lumeo:flex lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:overflow-y-auto lumeo:bg-zinc-50 lumeo:p-6">
+            <img
+              src={image.url}
+              alt={image.fileName}
+              className="lumeo:max-h-[70vh] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
+            />
           </div>
         </div>
-
-        {confirmAction === "delete" && (
-          <ConfirmDialog
-            title={messages.confirmDeleteTitle}
-            message={messages.confirmDeleteMessage}
-            confirmLabel={messages.delete}
-            cancelLabel={messages.cancel}
-            tone="danger"
-            onCancel={() => setConfirmAction(null)}
-            onConfirm={() => {
-              setConfirmAction(null);
-              handleDelete();
-            }}
-          />
-        )}
-      </>
+      </div>
     );
   }
 
