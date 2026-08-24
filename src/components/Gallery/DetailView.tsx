@@ -1,8 +1,8 @@
-import { Calendar, Crop } from "lucide-react";
+import { Calendar } from "lucide-react";
 import type { LumeoImage, LumeoImageTypeOption, LumeoLocale } from "../../types";
 import { TypeBadge } from "./TypeBadge";
 import { InlineImageBadge } from "./InlineImageBadge";
-import { resolveCropLabels } from "../../lib/imageTypes";
+import { CropBadge } from "./CropBadge";
 import { panel } from "../../styles/editorial";
 import { dateLocaleTag } from "../../lib/i18n";
 
@@ -44,10 +44,14 @@ export function DetailView({ images, imageTypes, onSelectImage, locale, inlineIm
               <span className="lumeo:flex lumeo:items-center lumeo:gap-1">
                 <Calendar size={11} /> {formatDate(image.uploadedAt, dateLocale)}
               </span>
-              {resolveCropLabels(image).map((label, index) => (
-                <span key={`${label}-${index}`} className="lumeo:flex lumeo:items-center lumeo:gap-1">
-                  <Crop size={11} /> {label}
-                </span>
+              {(image.crops ?? []).map((crop) => (
+                <CropBadge
+                  key={crop.id}
+                  image={image}
+                  crop={crop}
+                  iconSize={11}
+                  labelClassName="lumeo:flex lumeo:items-center lumeo:gap-1"
+                />
               ))}
             </div>
           </div>

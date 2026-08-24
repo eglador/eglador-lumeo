@@ -164,16 +164,6 @@ export function segmentImageTypes(options: LumeoImageTypeOption[]): ImageTypeSeg
   return segments;
 }
 
-/**
- * Human readable labels for the crops already saved on an image — always the crop's own `name`
- * (set once at creation time: the usage type's label for a `cropByUsageType` crop, or a generated
- * "Crop N" for a manual one). Empty array when the image hasn't been cropped yet.
- */
-export function resolveCropLabels(image: LumeoImage): string[] {
-  if (!image.crops || image.crops.length === 0) return [];
-  return image.crops.map((crop) => crop.name);
-}
-
 /** Every crop region saved on any image in the list, flattened into one array. */
 function collectAllCrops(images: LumeoImage[]): CropRegion[] {
   return images.flatMap((image) => image.crops ?? []);
