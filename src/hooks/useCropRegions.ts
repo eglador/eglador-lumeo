@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { pickRegionColor } from "../components/ImageModal/CropStudio/colors";
 import type { CropRegion } from "../types";
+import type { Bounds } from "../lib/geometry";
 
 /**
  * Backfills a `color` and a unique `id` for any region missing one — e.g. crops loaded back from
@@ -32,6 +33,9 @@ export interface UseCropRegionsResult {
   addRegion: (region: CropRegion) => void;
   removeRegion: (id: string) => void;
   updateRegion: (id: string, patch: Partial<Omit<CropRegion, "id">>) => void;
+  /** Natural pixel size of the image being cropped, reported by the crop tool once it loads. `{0, 0}` until then. */
+  naturalSize: Bounds;
+  setNaturalSize: (size: Bounds) => void;
 }
 
 /** Manages the list of named crop regions for a single image and which one is active/editable. */
@@ -41,6 +45,7 @@ export function useCropRegions(initial: CropRegion[] = []): UseCropRegionsResult
   // (possibly regenerated) id — computing it from `initial` again would risk a mismatched,
   // independently-regenerated random id.
   const [activeRegionId, setActiveRegionId] = useState<string | null>(() => regions[0]?.id ?? null);
+  const [naturalSize, setNaturalSize] = useState<Bounds>({ width: 0, height: 0 });
 
   const addRegion = useCallback((region: CropRegion) => {
     setRegions((prev) => [...prev, region]);
@@ -66,5 +71,7 @@ export function useCropRegions(initial: CropRegion[] = []): UseCropRegionsResult
     addRegion,
     removeRegion,
     updateRegion,
+    naturalSize,
+    setNaturalSize,
   };
 }

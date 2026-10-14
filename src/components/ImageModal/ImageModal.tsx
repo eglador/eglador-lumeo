@@ -71,6 +71,15 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
     const groupValue = cropByUsageType
       ? findGroupValueForCropRegions(imageTypes, cropRegions.regions)
       : findGroupValueForType(imageTypes, selectedType);
+    // Crop coordinates are in the original image's natural pixel space — send that space's size
+    // along with every crop so the backend can interpret/scale `x`/`y`/`width`/`height` correctly.
+    // Prefer the size measured from the actually loaded image; fall back to the API-reported one.
+    const originalWidth = cropRegions.naturalSize.width || image.width;
+    const originalHeight = cropRegions.naturalSize.height || image.height;
+    const crops = cropRegions.regions.map((region) => ({
+      ...region,
+      ...(originalWidth && originalHeight ? { originalWidth, originalHeight } : {}),
+    }));
     const payload = {
       id: image.id,
       // In cropByUsageType mode, each crop already carries its own `type` — there's no single
@@ -81,7 +90,7 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
         ? { sizes: selectedSizes.map((preset) => toSelectedSize(preset)) }
         : {}),
       ...((cropByUsageType || cropEnabled) && cropRegions.regions.length > 0
-        ? { crops: cropRegions.regions }
+        ? { crops }
         : {}),
     };
     const actionPromise = saveImageMeta(config, payload);

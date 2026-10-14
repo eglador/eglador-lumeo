@@ -523,7 +523,10 @@ the single `id`/`label` the user actually selected:
 ```
 
 **c) One or more regions were manually selected from the "Custom Crop" tab** — coordinates are in
-the original image's natural pixel space, `x`/`y` from the top-left corner:
+the original image's natural pixel space, `x`/`y` from the top-left corner. Every crop also carries
+`originalWidth`/`originalHeight` — the natural pixel size of the original image those coordinates
+are measured against (taken from the loaded image, falling back to `LumeoImage.width`/`height`), so
+your backend can scale the region if it stores the original at a different size:
 
 ```json
 {
@@ -539,7 +542,9 @@ the original image's natural pixel space, `x`/`y` from the top-left corner:
       "x": 120,
       "y": 340,
       "width": 1024,
-      "height": 576
+      "height": 576,
+      "originalWidth": 1920,
+      "originalHeight": 1080
     }
   ]
 }
@@ -1289,7 +1294,10 @@ kullanıcının seçtiği tek `id`/`label` altında birden fazla kutuya genişle
 ```
 
 **c) "Özel Kırpma" sekmesinden elle bölge(ler) seçildiyse** — koordinatlar orijinal görselin doğal
-piksel boyutuna göredir, `x`/`y` sol-üst köşeden itibaren:
+piksel boyutuna göredir, `x`/`y` sol-üst köşeden itibaren. Her kırpmada ayrıca
+`originalWidth`/`originalHeight` alanları da gönderilir — bu koordinatların ölçüldüğü orijinal
+görselin doğal piksel boyutu (yüklenen görselden okunur, yoksa `LumeoImage.width`/`height`
+kullanılır); backend orijinali farklı bir boyutta saklıyorsa bölgeyi buna göre ölçekleyebilir:
 
 ```json
 {
@@ -1305,7 +1313,9 @@ piksel boyutuna göredir, `x`/`y` sol-üst köşeden itibaren:
       "x": 120,
       "y": 340,
       "width": 1024,
-      "height": 576
+      "height": 576,
+      "originalWidth": 1920,
+      "originalHeight": 1080
     }
   ]
 }
@@ -1532,7 +1542,9 @@ taşıyan bir `typeId` alanı da gönderilir:
       "x": 0,
       "y": 160,
       "width": 2560,
-      "height": 1440
+      "height": 1440,
+      "originalWidth": 2560,
+      "originalHeight": 1760
     },
     {
       "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
@@ -1546,7 +1558,9 @@ taşıyan bir `typeId` alanı da gönderilir:
       "x": 107,
       "y": 0,
       "width": 2347,
-      "height": 1760
+      "height": 1760,
+      "originalWidth": 2560,
+      "originalHeight": 1760
     }
   ]
 }
@@ -1596,7 +1610,9 @@ bir satır eklenmez, liste hâlâ tek kayıt gösterir:
           "x": 0,
           "y": 160,
           "width": 2560,
-          "height": 1440
+          "height": 1440,
+          "originalWidth": 2560,
+          "originalHeight": 1760
         },
         {
           "id": "d3a2f5b1-2d4e-4f60-9b0c-1d2e3f4a5b6c",
@@ -1610,7 +1626,9 @@ bir satır eklenmez, liste hâlâ tek kayıt gösterir:
           "x": 107,
           "y": 0,
           "width": 2347,
-          "height": 1760
+          "height": 1760,
+          "originalWidth": 2560,
+          "originalHeight": 1760
         }
       ]
     }

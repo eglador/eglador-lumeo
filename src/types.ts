@@ -105,6 +105,14 @@ export interface CropRegion {
   y: number;
   width: number;
   height: number;
+  /**
+   * Natural pixel width of the original image `x`/`y`/`width`/`height` are measured against.
+   * Filled in automatically on save (from the loaded image, falling back to `LumeoImage.width`),
+   * so the backend can scale the region if it stores/serves the original at a different size.
+   */
+  originalWidth?: number;
+  /** Natural pixel height of the original image — see `originalWidth`. */
+  originalHeight?: number;
 }
 
 /** Per-entry satisfied status for one `required` usage type — see `RequiredImageTypesResult.statuses`. */

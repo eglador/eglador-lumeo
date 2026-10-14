@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { CropCanvas } from "./CropCanvas";
 import { AspectRatioPicker, type AspectPreset } from "./AspectRatioPicker";
 import { TypeCropSelector } from "./TypeCropSelector";
@@ -6,7 +6,6 @@ import { CropRegionChips } from "./CropRegionChips";
 import { pickRegionColor } from "./colors";
 import { centeredRectForAspect, centeredRectForSize, maxRectForAspect, roundRect, roundAspect } from "../../../lib/geometry";
 import { formatAspectRatioSlug, regionMatchesOption } from "../../../lib/imageTypes";
-import type { Bounds } from "../../../lib/geometry";
 import type { UseCropRegionsResult } from "../../../hooks/useCropRegions";
 import type { LumeoImage, LumeoImageTypeOption } from "../../../types";
 import type { LumeoMessages } from "../../../lib/i18n";
@@ -27,7 +26,9 @@ export interface CropStudioProps {
 
 export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTypes }: CropStudioProps) {
   const imgRef = useRef<HTMLImageElement>(null);
-  const [naturalSize, setNaturalSize] = useState<Bounds>({ width: 0, height: 0 });
+  // Lives on `regionsApi` (not local state) so the save handler can stamp it onto every crop as
+  // `originalWidth`/`originalHeight`.
+  const { naturalSize, setNaturalSize } = regionsApi;
 
   const addRegion = (preset: AspectPreset) => {
     const naturalBounds = naturalSize.width > 0 ? naturalSize : { width: 1000, height: 1000 };
