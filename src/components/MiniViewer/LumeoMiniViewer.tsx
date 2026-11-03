@@ -278,7 +278,7 @@ export function LumeoMiniViewer({
                   className="lumeo:group lumeo:relative lumeo:aspect-square lumeo:p-0 lumeo:overflow-hidden lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:transition-transform"
                 >
                   <img
-                    src={image.url}
+                    src={image.thumbUrl ?? image.url}
                     alt={image.fileName}
                     draggable={false}
                     className="lumeo:h-full lumeo:w-full lumeo:object-cover"

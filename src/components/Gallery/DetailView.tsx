@@ -34,7 +34,7 @@ export function DetailView({ images, imageTypes, onSelectImage, locale, inlineIm
           className={`lumeo:flex lumeo:items-center lumeo:gap-4 lumeo:p-3 lumeo:text-left lumeo:transition-colors lumeo:hover:bg-zinc-50 ${panel}`}
         >
           <img
-            src={image.url}
+            src={image.thumbUrl ?? image.url}
             alt={image.fileName}
             className="lumeo:h-16 lumeo:w-16 lumeo:shrink-0 lumeo:rounded-sm lumeo:border lumeo:border-zinc-200 lumeo:object-cover"
           />

@@ -367,7 +367,8 @@ into all 4 requests too — most commonly an `Authorization` bearer token.
 interface LumeoImage {
   id: string;               // assigned by the API, required
   fileName: string;
-  url: string;
+  url: string;               // full resolution — used by the crop tool and the image popup
+  thumbUrl?: string;         // optional small preview (e.g. 400px wide) for gallery/mini-viewer thumbnails; falls back to url
   uploadedAt: string;        // ISO 8601, e.g. "2026-07-01T20:15:30.000Z"
   type?: string | number;    // e.g. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri" — or a numeric id
   fileSize?: number;         // bytes
@@ -407,6 +408,7 @@ siteId: 42                    (if config.siteId is set)
       "id": "img_9f1c2a",
       "fileName": "headline-image.jpg",
       "url": "https://cdn.example.com/uploads/img_9f1c2a.jpg",
+      "thumbUrl": "https://cdn.example.com/uploads/img_9f1c2a_thumb_400.jpg",
       "uploadedAt": "2026-07-01T20:15:30.000Z",
       "fileSize": 245000,
       "mimeType": "image/jpeg",
@@ -1138,7 +1140,8 @@ bu 4 isteğin hepsine de eklenir — en yaygın kullanımı bir `Authorization` 
 interface LumeoImage {
   id: string;                // API tarafından atanır, zorunlu
   fileName: string;
-  url: string;
+  url: string;                // tam çözünürlük — kırpma aracı ve görsel popup'ı kullanır
+  thumbUrl?: string;          // opsiyonel küçük önizleme (ör. 400px genişlik) — galeri/mini viewer küçük resimleri; yoksa url kullanılır
   uploadedAt: string;         // ISO 8601, ör. "2026-07-01T20:15:30.000Z"
   type?: string | number;     // ör. "manset" | "kapak" | "banner" | "schema" | "thumbnail" | "galeri" — ya da sayısal bir id
   fileSize?: number;          // byte
@@ -1178,6 +1181,7 @@ siteId: 42                    (config.siteId tanımlıysa)
       "id": "img_9f1c2a",
       "fileName": "manset-gorseli.jpg",
       "url": "https://cdn.example.com/uploads/img_9f1c2a.jpg",
+      "thumbUrl": "https://cdn.example.com/uploads/img_9f1c2a_thumb_400.jpg",
       "uploadedAt": "2026-07-01T20:15:30.000Z",
       "fileSize": 245000,
       "mimeType": "image/jpeg",

@@ -55,7 +55,14 @@ export interface LumeoImage {
   /** Always assigned by the API. Never generated client-side. */
   id: string;
   fileName: string;
+  /** Full-resolution image — used by the crop tool and the image popup. */
   url: string;
+  /**
+   * Optional small preview (e.g. ~400px wide) rendered in place of `url` by the gallery
+   * grid/list and `LumeoMiniViewer` thumbnails, so long lists don't download full-size originals.
+   * Falls back to `url` when omitted.
+   */
+  thumbUrl?: string;
   /** ISO 8601 timestamp as returned by the API. */
   uploadedAt: string;
   type?: LumeoTypeValue;

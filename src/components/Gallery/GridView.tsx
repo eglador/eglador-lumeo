@@ -24,7 +24,7 @@ export function GridView({ images, imageTypes, onSelectImage, inlineImageBadgeLa
         >
           <div className="lumeo:absolute lumeo:inset-0 lumeo:overflow-hidden lumeo:rounded-lg">
             <img
-              src={image.url}
+              src={image.thumbUrl ?? image.url}
               alt={image.fileName}
               className="lumeo:h-full lumeo:w-full lumeo:object-cover lumeo:transition-transform lumeo:group-hover:scale-105"
             />
