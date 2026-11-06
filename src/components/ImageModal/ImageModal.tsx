@@ -183,7 +183,12 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
           {config.waitForSuccess && (isSaving || isDeleting) && <LoadingBar />}
 
           <div className="lumeo:flex lumeo:flex-1 lumeo:flex-col lumeo:gap-6 lumeo:overflow-y-auto lumeo:p-6 lumeo:md:flex-row">
-            <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-1 lumeo:items-center lumeo:justify-center lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4">
+            {/* Scrolls on its own in the side-by-side (md+) layout instead of overflowing the
+                body's fixed height; on mobile it sizes to its content and the body scrolls.
+                Centered via `m-auto` on the inner wrapper, which — unlike `items-center` — never
+                pushes content above the top edge where it can't be scrolled to. */}
+            <div className="lumeo:flex lumeo:min-h-[280px] lumeo:flex-none lumeo:overflow-y-auto lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-zinc-50 lumeo:p-4 lumeo:md:min-h-0 lumeo:md:flex-1">
+              <div className="lumeo:m-auto lumeo:flex lumeo:w-full lumeo:justify-center">
               {cropByUsageType ? (
                 <CropStudio image={image} regionsApi={cropRegions} messages={messages} imageTypes={imageTypes} />
               ) : cropEnabled ? (
@@ -199,12 +204,13 @@ export function ImageModal({ image, onClose, onRefetch, cropByUsageType = false 
                 <img
                   src={image.url}
                   alt={image.fileName}
-                  className="lumeo:max-h-[420px] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
+                  className="lumeo:max-h-[min(420px,55vh)] lumeo:max-w-full lumeo:rounded-sm lumeo:object-contain"
                 />
               )}
+              </div>
             </div>
 
-            <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72">
+            <div className="lumeo:flex lumeo:w-full lumeo:flex-col lumeo:gap-4 lumeo:md:w-72 lumeo:md:overflow-y-auto">
               {!cropByUsageType && !cropEnabled && (
                 <div>
                   <p className={`lumeo:mb-1.5 lumeo:flex lumeo:items-center lumeo:gap-1.5 ${sectionLabel}`}>

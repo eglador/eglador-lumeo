@@ -102,7 +102,7 @@ export function CropStudio({ image, defaultAspect, regionsApi, messages, imageTy
               });
             }
           }}
-          className="lumeo:box-border lumeo:block lumeo:max-h-[380px] lumeo:max-w-full lumeo:select-none lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain"
+          className="lumeo:box-border lumeo:block lumeo:max-h-[min(380px,45vh)] lumeo:max-w-full lumeo:select-none lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain"
         />
         {naturalSize.width > 0 && (
           <CropCanvas

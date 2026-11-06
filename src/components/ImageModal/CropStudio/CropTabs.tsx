@@ -67,7 +67,7 @@ export function CropTabs({ image, sizePresets, sizeSelection, defaultAspect, reg
           <img
             src={image.url}
             alt={image.fileName}
-            className="lumeo:max-h-[260px] lumeo:w-full lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain lumeo:sm:w-1/2"
+            className="lumeo:max-h-[min(260px,40vh)] lumeo:w-full lumeo:rounded-lg lumeo:border lumeo:border-zinc-200 lumeo:bg-white lumeo:object-contain lumeo:sm:w-1/2"
           />
           <div className="lumeo:flex-1">
             <p className="lumeo:mb-2 lumeo:text-xs lumeo:text-zinc-500">{messages.sizeOptionsHint}</p>

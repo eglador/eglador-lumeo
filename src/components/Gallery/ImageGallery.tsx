@@ -112,6 +112,7 @@ export function ImageGallery({
           images={images}
           imageTypes={imageTypes}
           onSelectImage={onSelectImage}
+          locale={locale}
           inlineImageBadgeLabel={inlineImageBadgeLabel}
         />
       ) : (

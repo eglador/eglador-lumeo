@@ -378,6 +378,11 @@ interface LumeoImage {
 }
 ```
 
+> Every gallery item (grid and list view) has a download button that always fetches the
+> full-size original `url` — never `thumbUrl` — and saves it under `fileName`. The file is fetched
+> as a blob first, so a cross-origin CDN needs CORS headers (`Access-Control-Allow-Origin`) for a
+> direct download; without them the original opens in a new tab instead.
+
 ---
 
 ##### 1) `endpoints.upload` — `POST`
@@ -1150,6 +1155,11 @@ interface LumeoImage {
   height?: number;            // orijinal piksel yüksekliği, upload sonrası API'den döner
 }
 ```
+
+> Galerideki her görselde (grid ve liste görünümü) bir indirme butonu vardır; her zaman tam boyutlu
+> orijinal `url`'i indirir — `thumbUrl`'i asla — ve dosyayı `fileName` adıyla kaydeder. Dosya önce
+> blob olarak çekildiği için, farklı origin'deki bir CDN'in doğrudan indirme için CORS başlıkları
+> (`Access-Control-Allow-Origin`) göndermesi gerekir; göndermiyorsa orijinal yeni sekmede açılır.
 
 ---
 

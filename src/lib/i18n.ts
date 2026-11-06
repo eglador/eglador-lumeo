@@ -7,6 +7,8 @@ export interface LumeoMessages {
   rejectedCount: (count: number) => string;
   removeFile: (name: string) => string;
   close: string;
+  /** Gallery item's download button — always downloads the full-size original. */
+  downloadOriginal: string;
   reasonType: string;
   reasonSize: string;
   reasonMaxFiles: string;
@@ -61,6 +63,7 @@ const en: LumeoMessages = {
   rejectedCount: (count) => `${count} file(s) were not accepted`,
   removeFile: (name) => `Remove file "${name}"`,
   close: "Close",
+  downloadOriginal: "Download original",
   reasonType: "unsupported file type",
   reasonSize: "exceeds the size limit",
   reasonMaxFiles: "exceeds the allowed number of files",
@@ -116,6 +119,7 @@ const tr: LumeoMessages = {
   rejectedCount: (count) => `${count} dosya kabul edilmedi`,
   removeFile: (name) => `${name} dosyasını kaldır`,
   close: "Kapat",
+  downloadOriginal: "Orijinali indir",
   reasonType: "desteklenmeyen dosya tipi",
   reasonSize: "boyut sınırını aşıyor",
   reasonMaxFiles: "izin verilen dosya sayısını aşıyor",
